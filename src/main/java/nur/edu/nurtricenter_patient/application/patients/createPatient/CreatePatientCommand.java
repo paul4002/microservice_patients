@@ -8,6 +8,14 @@ import nur.edu.nurtricenter_patient.core.results.ResultWithValue;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-public record CreatePatientCommand(String name, String lastname, @JsonFormat(pattern = "dd-MM-yyyy") LocalDate birthDate, String email, String cellphone) implements Command<ResultWithValue<UUID>> {
+public record CreatePatientCommand(
+  String name,
+  String lastname,
+  @JsonFormat(pattern = "dd-MM-yyyy") LocalDate birthDate,
+  String email,
+  String cellphone,
+  String document,
+  UUID subscriptionId
+) implements Command<ResultWithValue<UUID>> {
 
 }

@@ -16,20 +16,12 @@ public class Address extends Entity {
   private Boolean state;
 
   public Address(String label, String line1, String line2, String country, String province, String city, Coordinate coordinate) {
-    super(UUID.randomUUID());
-    if (isBlank(label)) {
-      throw new DomainException(AddressErrors.LabelIsRequired());
-    } else if (isBlank(line1)) {
-      throw new DomainException(AddressErrors.Line1IsRequired());
-    } else if (isBlank(country)) {
-      throw new DomainException(AddressErrors.CountryIsRequired());
-    } else if (isBlank(province)) {
-      throw new DomainException(AddressErrors.ProvinceIsRequired());
-    } else if (isBlank(city)) {
-      throw new DomainException(AddressErrors.CityIsRequired());
-    } else if (coordinate == null) {
-      throw new DomainException(AddressErrors.CoordinateIsRequired());
-    }
+    this(UUID.randomUUID(), label, line1, line2, country, province, city, coordinate, true);
+  }
+
+  public Address(UUID id, String label, String line1, String line2, String country, String province, String city, Coordinate coordinate, Boolean state) {
+    super(id);
+    validate(label, line1, country, province, city, coordinate);
     this.label = label;
     this.line1 = line1;
     this.line2 = line2;
@@ -37,7 +29,7 @@ public class Address extends Entity {
     this.province = province;
     this.city = city;
     this.coordinate = coordinate;
-    this.state = true;
+    this.state = state != null ? state : true;
   }
 
   public String getLabel() {
@@ -76,7 +68,45 @@ public class Address extends Entity {
     return this.state;
   }
 
+  public void update(String label, String line1, String line2, String country, String province, String city, Coordinate coordinate) {
+    validate(label, line1, country, province, city, coordinate);
+    this.label = label;
+    this.line1 = line1;
+    this.line2 = line2;
+    this.country = country;
+    this.province = province;
+    this.city = city;
+    this.coordinate = coordinate;
+  }
+
+  public void deactivate() {
+    this.state = false;
+  }
+
+  public void updateGeo(Coordinate coordinate) {
+    if (coordinate == null) {
+      throw new DomainException(AddressErrors.CoordinateIsRequired());
+    }
+    this.coordinate = coordinate;
+  }
+
   private static boolean isBlank(String value) {
     return value == null || value.isBlank();
+  }
+
+  private static void validate(String label, String line1, String country, String province, String city, Coordinate coordinate) {
+    if (isBlank(label)) {
+      throw new DomainException(AddressErrors.LabelIsRequired());
+    } else if (isBlank(line1)) {
+      throw new DomainException(AddressErrors.Line1IsRequired());
+    } else if (isBlank(country)) {
+      throw new DomainException(AddressErrors.CountryIsRequired());
+    } else if (isBlank(province)) {
+      throw new DomainException(AddressErrors.ProvinceIsRequired());
+    } else if (isBlank(city)) {
+      throw new DomainException(AddressErrors.CityIsRequired());
+    } else if (coordinate == null) {
+      throw new DomainException(AddressErrors.CoordinateIsRequired());
+    }
   }
 }

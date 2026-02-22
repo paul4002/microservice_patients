@@ -4,8 +4,15 @@ import java.util.UUID;
 
 import org.springframework.data.repository.CrudRepository;
 
+import nur.edu.nurtricenter_patient.domain.patient.Cellphone;
+import nur.edu.nurtricenter_patient.domain.patient.Email;
 import nur.edu.nurtricenter_patient.infraestructure.domainModel.PatientEntity;
 
 public interface PatientEntityRepository extends CrudRepository<PatientEntity, UUID> {
-
+  boolean existsByEmail(Email email);
+  boolean existsByCellphone(Cellphone cellphone);
+  boolean existsByDocument(String document);
+  boolean existsByEmailAndIdNot(Email email, UUID id);
+  boolean existsByCellphoneAndIdNot(Cellphone cellphone, UUID id);
+  boolean existsByDocumentAndIdNot(String document, UUID id);
 }

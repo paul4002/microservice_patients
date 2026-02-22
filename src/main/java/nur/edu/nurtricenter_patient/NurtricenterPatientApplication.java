@@ -5,6 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import an.awesome.pipelinr.Command;
 import an.awesome.pipelinr.CommandHandlers;
@@ -15,6 +16,7 @@ import an.awesome.pipelinr.Notification;
 
 @SpringBootApplication
 @EnableAsync
+@EnableScheduling
 public class NurtricenterPatientApplication {
 
 	public static void main(String[] args) {

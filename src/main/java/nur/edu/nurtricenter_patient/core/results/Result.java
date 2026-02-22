@@ -36,11 +36,9 @@ public class Result {
         return new ResultWithValue<>(value, true, Error.NONE);
     }
 
-    // public static Result failure(Error error) {
-    //     return new Result(false, error);
-    // }
-
-    public static <T> ResultWithValue<T> failure(Error error) {
-        return new ResultWithValue<>(null, false, error);
+    public static Result failure(Error error) {
+        return new Result(false, error);
     }
+
+    // Use ResultWithValue.failure for typed failures
 }

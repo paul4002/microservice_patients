@@ -16,6 +16,8 @@ services:
     container_name: nurtricenter_patient_api
     depends_on:
       - db
+    env_file:
+      - .env
     environment:
       DB_URL: jdbc:postgresql://db:5432/nurtricenter_patient_db
       DB_USER: postgres

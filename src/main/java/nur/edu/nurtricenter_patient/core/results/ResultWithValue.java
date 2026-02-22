@@ -15,13 +15,21 @@ public class ResultWithValue<T> extends Result {
 
     public static <T> ResultWithValue<T> of(T value) {
         if (value != null) {
-            return Result.success(value);
+            return new ResultWithValue<>(value, true, Error.NONE);
         } else {
-            return Result.failure(Error.NULL_VALUE);
+            return new ResultWithValue<>(null, false, Error.NULL_VALUE);
         }
     }
 
+    public static <T> ResultWithValue<T> success(T value) {
+        return new ResultWithValue<>(value, true, Error.NONE);
+    }
+
     public static <T> ResultWithValue<T> validationFailure(Error error) {
+        return new ResultWithValue<>(null, false, error);
+    }
+
+    public static <T> ResultWithValue<T> fail(Error error) {
         return new ResultWithValue<>(null, false, error);
     }
 }

@@ -1,0 +1,116 @@
+{
+  "info": {
+    "name": "microservice_patients",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080"}
+  ],
+  "item": [
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "Create Patient",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/api/patient", "host": ["{{baseUrl}}"], "path": ["api", "patient"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan\",\n  \"lastname\": \"Perez\",\n  \"birthDate\": \"15-02-1990\",\n  \"email\": \"juan.perez@example.com\",\n  \"cellphone\": \"77778888\",\n  \"document\": \"1234567\",\n  \"subscriptionId\": \"11111111-1111-1111-1111-111111111111\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Patient",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}"]}
+          }
+        },
+        {
+          "name": "List Patients",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/api/patient", "host": ["{{baseUrl}}"], "path": ["api", "patient"]}
+          }
+        },
+        {
+          "name": "Update Patient",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan\",\n  \"lastname\": \"Perez\",\n  \"birthDate\": \"15-02-1990\",\n  \"email\": \"juan.perez@example.com\",\n  \"cellphone\": \"77778888\",\n  \"document\": \"1234567\",\n  \"subscriptionId\": \"11111111-1111-1111-1111-111111111111\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Patient",
+          "request": {
+            "method": "DELETE",
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Addresses",
+      "item": [
+        {
+          "name": "Add Address",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}/address", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}", "address"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Casa\",\n  \"line1\": \"Av. Principal 123\",\n  \"line2\": \"Dpto 4\",\n  \"country\": \"BO\",\n  \"province\": \"Andres Ibanez\",\n  \"city\": \"Santa Cruz\",\n  \"latitude\": -17.78,\n  \"longitude\": -63.18\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Addresses",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}/address", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}", "address"]}
+          }
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}/address/{{addressId}}", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}", "address", "{{addressId}}"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Casa\",\n  \"line1\": \"Av. Principal 123\",\n  \"line2\": \"Dpto 5\",\n  \"country\": \"BO\",\n  \"province\": \"Andres Ibanez\",\n  \"city\": \"Santa Cruz\",\n  \"latitude\": -17.78,\n  \"longitude\": -63.18\n}"
+            }
+          }
+        },
+        {
+          "name": "Geocode Address",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}/address/{{addressId}}/geo", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}", "address", "{{addressId}}", "geo"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": -17.78,\n  \"longitude\": -63.18\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate Address",
+          "request": {
+            "method": "DELETE",
+            "url": {"raw": "{{baseUrl}}/api/patient/{{patientId}}/address/{{addressId}}", "host": ["{{baseUrl}}"], "path": ["api", "patient", "{{patientId}}", "address", "{{addressId}}"]}
+          }
+        }
+      ]
+    }
+  ]
+}

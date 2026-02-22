@@ -21,4 +21,16 @@ public abstract class DomainEvent implements Notification {
     public LocalDateTime getOccurredOn() {
         return occurredOn;
     }
+
+    public abstract String getAggregateType();
+
+    public abstract String getAggregateId();
+
+    public String getEventType() {
+        return getClass().getSimpleName();
+    }
+
+    public abstract String getEventName();
+
+    public abstract Object getPayload();
 }

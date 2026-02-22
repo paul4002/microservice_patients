@@ -37,4 +37,32 @@ public final class PatientErrors {
   public static Error CellphoneIsRequired() {
     return new Error("Patient.CellphoneIsRequired", "The patient cellphone is required", ErrorType.VALIDATION);
   }
+
+  public static Error DocumentIsRequired() {
+    return new Error("Patient.DocumentIsRequired", "The patient document is required", ErrorType.VALIDATION);
+  }
+
+  public static Error SubscriptionIdIsRequired() {
+    return new Error("Patient.SubscriptionIdIsRequired", "The patient subscription id is required", ErrorType.VALIDATION);
+  }
+
+  public static Error EmailAlreadyExists(String value) {
+    return Error.conflict("Patient.EmailAlreadyExists", "Email already exists: {value}", value);
+  }
+
+  public static Error CellphoneAlreadyExists(String value) {
+    return Error.conflict("Patient.CellphoneAlreadyExists", "Cellphone already exists: {value}", value);
+  }
+
+  public static Error DocumentAlreadyExists(String value) {
+    return Error.conflict("Patient.DocumentAlreadyExists", "Document already exists: {value}", value);
+  }
+
+  public static Error PatientNotFound(String id) {
+    return new Error("Patient.NotFound", "Patient not found: {id}", ErrorType.NOT_FOUND, id);
+  }
+
+  public static Error AddressNotFound(String id) {
+    return new Error("Patient.AddressNotFound", "Address not found: {id}", ErrorType.NOT_FOUND, id);
+  }
 }
