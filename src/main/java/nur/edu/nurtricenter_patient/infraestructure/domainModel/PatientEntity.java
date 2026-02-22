@@ -73,4 +73,11 @@ public class PatientEntity {
     patientEntity.cellphone = patient.getCellphone();
     return patientEntity;
   }
+
+  public static Patient toDomain(PatientEntity entity) {
+    if (entity == null) {
+      return null;
+    }
+    return new Patient(entity.id, entity.name, entity.lastname, entity.birthDate, entity.email, entity.cellphone);
+  }
 }

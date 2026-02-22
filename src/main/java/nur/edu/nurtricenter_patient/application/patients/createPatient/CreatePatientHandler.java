@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 import an.awesome.pipelinr.Command;
 import nur.edu.nurtricenter_patient.core.abstractions.IUnitOfWork;
 import nur.edu.nurtricenter_patient.core.results.DomainException;
-import nur.edu.nurtricenter_patient.core.results.Error;
 import nur.edu.nurtricenter_patient.core.results.ResultWithValue;
 import nur.edu.nurtricenter_patient.domain.patient.Cellphone;
 import nur.edu.nurtricenter_patient.domain.patient.Email;
@@ -29,8 +28,7 @@ public class CreatePatientHandler implements Command.Handler<CreatePatientComman
     try {
       patient = new Patient(request.name(), request.lastname(), request.birthDate(), new Email(request.email()), new Cellphone(request.cellphone()));
     } catch (DomainException e) {
-      Error err = e.getError();
-      return ResultWithValue.failure(Error.failure(err.getCode(), err.getStructuredMessage(), err.getType().toString()));
+      return ResultWithValue.failure(e.getError());
     }
     this.patientRepository.add(patient);
     this.unitOfWork.commitAsync();

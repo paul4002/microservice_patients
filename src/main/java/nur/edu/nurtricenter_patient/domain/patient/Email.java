@@ -1,7 +1,8 @@
 package nur.edu.nurtricenter_patient.domain.patient;
 
-import java.util.Objects;
 import java.util.regex.Pattern;
+
+import nur.edu.nurtricenter_patient.core.results.DomainException;
 
 public record Email(String value) {
 
@@ -10,10 +11,12 @@ public record Email(String value) {
     );
 
     public Email {
-        Objects.requireNonNull(value, "Email cannot be null");
+        if (value == null || value.isBlank()) {
+            throw new DomainException(PatientErrors.EmailIsRequired());
+        }
 
         if (!EMAIL_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Invalid email format: " + value);
+            throw new DomainException(PatientErrors.EmailIsInvalid(value));
         }
     }
 }

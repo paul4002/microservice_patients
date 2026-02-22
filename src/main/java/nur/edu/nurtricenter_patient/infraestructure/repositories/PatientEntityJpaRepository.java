@@ -24,13 +24,14 @@ public class PatientEntityJpaRepository implements IPatientRepository {
 
   @Override
   public Patient getById(UUID id) {
-    // TODO Auto-generated method stub
-    return null;
+    return this.patientEntityRepository.findById(id)
+      .map(PatientEntity::toDomain)
+      .orElse(null);
   }
 
   @Override
   public void update(Patient patient) {
-    // TODO Auto-generated method stub
-    
+    PatientEntity entity = PatientEntity.fromDomain(patient);
+    this.patientEntityRepository.save(entity);
   }
 }

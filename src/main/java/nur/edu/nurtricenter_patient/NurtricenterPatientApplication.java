@@ -4,6 +4,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import an.awesome.pipelinr.Command;
 import an.awesome.pipelinr.CommandHandlers;
@@ -13,6 +14,7 @@ import an.awesome.pipelinr.Pipelinr;
 import an.awesome.pipelinr.Notification;
 
 @SpringBootApplication
+@EnableAsync
 public class NurtricenterPatientApplication {
 
 	public static void main(String[] args) {

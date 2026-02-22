@@ -17,15 +17,15 @@ public class Address extends Entity {
 
   public Address(String label, String line1, String line2, String country, String province, String city, Coordinate coordinate) {
     super(UUID.randomUUID());
-    if (label.isBlank()) {
+    if (isBlank(label)) {
       throw new DomainException(AddressErrors.LabelIsRequired());
-    } else if (line1.isBlank()) {
+    } else if (isBlank(line1)) {
       throw new DomainException(AddressErrors.Line1IsRequired());
-    } else if (country.isBlank()) {
+    } else if (isBlank(country)) {
       throw new DomainException(AddressErrors.CountryIsRequired());
-    } else if (province.isBlank()) {
+    } else if (isBlank(province)) {
       throw new DomainException(AddressErrors.ProvinceIsRequired());
-    } else if (city.isBlank()) {
+    } else if (isBlank(city)) {
       throw new DomainException(AddressErrors.CityIsRequired());
     } else if (coordinate == null) {
       throw new DomainException(AddressErrors.CoordinateIsRequired());
@@ -74,5 +74,9 @@ public class Address extends Entity {
 
   public Boolean isActive() {
     return this.state;
+  }
+
+  private static boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 }
