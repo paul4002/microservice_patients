@@ -50,7 +50,7 @@ public class PatientUpdatedEvent extends DomainEvent {
 
   @Override
   public Object getPayload() {
-    return new Payload(patientId.toString(), nombre, documento, suscripcionId.toString());
+    return new Payload(patientId.toString(), nombre, documento, suscripcionId != null ? suscripcionId.toString() : null);
   }
 
   private record Payload(String pacienteId, String nombre, String documento, String suscripcionId) {}

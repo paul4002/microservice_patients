@@ -13,11 +13,15 @@ import jakarta.persistence.Table;
 public class OutboxEventEntity {
   @Id
   private UUID id;
+  private UUID eventId;
 
   private String aggregateType;
   private String aggregateId;
   private String eventType;
   private String eventName;
+  private String routingKey;
+  private Integer schemaVersion;
+  private UUID correlationId;
 
   @Column(columnDefinition = "TEXT")
   private String payload;
@@ -68,6 +72,38 @@ public class OutboxEventEntity {
 
   public void setEventName(String eventName) {
     this.eventName = eventName;
+  }
+
+  public UUID getEventId() {
+    return eventId;
+  }
+
+  public void setEventId(UUID eventId) {
+    this.eventId = eventId;
+  }
+
+  public String getRoutingKey() {
+    return routingKey;
+  }
+
+  public void setRoutingKey(String routingKey) {
+    this.routingKey = routingKey;
+  }
+
+  public Integer getSchemaVersion() {
+    return schemaVersion;
+  }
+
+  public void setSchemaVersion(Integer schemaVersion) {
+    this.schemaVersion = schemaVersion;
+  }
+
+  public UUID getCorrelationId() {
+    return correlationId;
+  }
+
+  public void setCorrelationId(UUID correlationId) {
+    this.correlationId = correlationId;
   }
 
   public String getPayload() {

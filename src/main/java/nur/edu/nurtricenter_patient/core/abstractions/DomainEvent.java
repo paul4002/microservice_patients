@@ -1,6 +1,7 @@
 package nur.edu.nurtricenter_patient.core.abstractions;
 
 import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.UUID;
 
 import an.awesome.pipelinr.Notification;
@@ -11,7 +12,7 @@ public abstract class DomainEvent implements Notification {
 
     protected DomainEvent() {
         this.id = UUID.randomUUID();
-        this.occurredOn = LocalDateTime.now();
+        this.occurredOn = LocalDateTime.now(Clock.systemUTC());
     }
 
     public UUID getId() {

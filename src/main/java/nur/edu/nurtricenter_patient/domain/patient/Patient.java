@@ -47,9 +47,6 @@ public class Patient extends AggregateRoot {
     if (document == null || document.isBlank()) {
       throw new DomainException(PatientErrors.DocumentIsRequired());
     }
-    if (subscriptionId == null) {
-      throw new DomainException(PatientErrors.SubscriptionIdIsRequired());
-    }
     this.name = name;
     this.lastname = lastname;
     this.birthDate = birthDate;
@@ -141,9 +138,6 @@ public class Patient extends AggregateRoot {
     }
     if (document == null || document.isBlank()) {
       throw new DomainException(PatientErrors.DocumentIsRequired());
-    }
-    if (subscriptionId == null) {
-      throw new DomainException(PatientErrors.SubscriptionIdIsRequired());
     }
     this.name = name;
     this.lastname = lastname;
