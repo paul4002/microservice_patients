@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import nur.edu.nurtricenter_patient.domain.patient.Cellphone;
 import nur.edu.nurtricenter_patient.domain.patient.Email;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
+import nur.edu.nurtricenter_patient.domain.patient.SubscriptionStatus;
 import nur.edu.nurtricenter_patient.infraestructure.domainModel.converters.CellphoneConverter;
 import nur.edu.nurtricenter_patient.infraestructure.domainModel.converters.EmailConverter;
 
@@ -35,6 +36,9 @@ public class PatientEntity {
   @jakarta.persistence.Column(unique = true)
   private String document;
   private UUID subscriptionId;
+  @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+  private SubscriptionStatus subscriptionStatus;
+  private LocalDate subscriptionEndsOn;
 
   @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
   private List<AddressEntity> addresses = new ArrayList<>();
@@ -87,6 +91,18 @@ public class PatientEntity {
   public void setSubscriptionId(UUID subscriptionId) {
     this.subscriptionId = subscriptionId;
   }
+  public SubscriptionStatus getSubscriptionStatus() {
+    return subscriptionStatus;
+  }
+  public void setSubscriptionStatus(SubscriptionStatus subscriptionStatus) {
+    this.subscriptionStatus = subscriptionStatus;
+  }
+  public LocalDate getSubscriptionEndsOn() {
+    return subscriptionEndsOn;
+  }
+  public void setSubscriptionEndsOn(LocalDate subscriptionEndsOn) {
+    this.subscriptionEndsOn = subscriptionEndsOn;
+  }
   public List<AddressEntity> getAddresses() {
     return addresses;
   }
@@ -104,6 +120,8 @@ public class PatientEntity {
     patientEntity.cellphone = patient.getCellphone();
     patientEntity.document = patient.getDocument();
     patientEntity.subscriptionId = patient.getSubscriptionId();
+    patientEntity.subscriptionStatus = patient.getSubscriptionStatus();
+    patientEntity.subscriptionEndsOn = patient.getSubscriptionEndsOn();
     patientEntity.addresses = new ArrayList<>();
     for (var address : patient.getAddresses()) {
       patientEntity.addresses.add(AddressEntity.fromDomain(address, patientEntity));
@@ -115,7 +133,18 @@ public class PatientEntity {
     if (entity == null) {
       return null;
     }
-    Patient patient = new Patient(entity.id, entity.name, entity.lastname, entity.birthDate, entity.email, entity.cellphone, entity.document, entity.subscriptionId);
+    Patient patient = new Patient(
+      entity.id,
+      entity.name,
+      entity.lastname,
+      entity.birthDate,
+      entity.email,
+      entity.cellphone,
+      entity.document,
+      entity.subscriptionId,
+      entity.subscriptionStatus,
+      entity.subscriptionEndsOn
+    );
     if (entity.addresses != null) {
       for (var addressEntity : entity.addresses) {
         patient.restoreAddress(AddressEntity.toDomain(addressEntity));

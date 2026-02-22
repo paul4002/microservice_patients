@@ -39,6 +39,14 @@ public class PatientEntityJpaRepository implements IPatientRepository {
   }
 
   @Override
+  public List<Patient> getBySubscriptionId(UUID subscriptionId) {
+    List<Patient> result = new ArrayList<>();
+    this.patientEntityRepository.findBySubscriptionId(subscriptionId)
+      .forEach(entity -> result.add(PatientEntity.toDomain(entity)));
+    return result;
+  }
+
+  @Override
   public void update(Patient patient) {
     PatientEntity entity = PatientEntity.fromDomain(patient);
     this.patientEntityRepository.save(entity);

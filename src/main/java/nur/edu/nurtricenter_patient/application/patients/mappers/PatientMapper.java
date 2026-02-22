@@ -39,6 +39,8 @@ public final class PatientMapper {
       patient.getCellphone().value(),
       patient.getDocument(),
       patient.getSubscriptionId(),
+      patient.getSubscriptionStatus(),
+      patient.getSubscriptionEndsOn(),
       addresses
     );
   }

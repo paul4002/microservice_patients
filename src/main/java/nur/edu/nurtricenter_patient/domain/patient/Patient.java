@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import nur.edu.nurtricenter_patient.core.abstractions.AggregateRoot;
@@ -20,6 +21,8 @@ public class Patient extends AggregateRoot {
   private Cellphone cellphone;
   private String document;
   private UUID subscriptionId;
+  private SubscriptionStatus subscriptionStatus;
+  private LocalDate subscriptionEndsOn;
   private final List<Address> addresses = new ArrayList<>();
   
   public Patient(String name, String lastname, LocalDate birthDate, Email email, Cellphone cellphone, String document, UUID subscriptionId) {
@@ -28,6 +31,12 @@ public class Patient extends AggregateRoot {
 
   public Patient(UUID id, String name, String lastname, LocalDate birthDate, Email email, Cellphone cellphone, String document, UUID subscriptionId) {
     this(id, name, lastname, birthDate, email, cellphone, document, subscriptionId, Clock.systemUTC());
+  }
+
+  public Patient(UUID id, String name, String lastname, LocalDate birthDate, Email email, Cellphone cellphone, String document, UUID subscriptionId, SubscriptionStatus subscriptionStatus, LocalDate subscriptionEndsOn) {
+    this(id, name, lastname, birthDate, email, cellphone, document, subscriptionId, Clock.systemUTC());
+    this.subscriptionStatus = subscriptionStatus != null ? subscriptionStatus : defaultStatus(subscriptionId);
+    this.subscriptionEndsOn = subscriptionEndsOn;
   }
 
   private Patient(UUID id, String name, String lastname, LocalDate birthDate, Email email, Cellphone cellphone, String document, UUID subscriptionId, Clock clock) {
@@ -54,6 +63,8 @@ public class Patient extends AggregateRoot {
     this.cellphone = cellphone;
     this.document = document;
     this.subscriptionId = subscriptionId;
+    this.subscriptionStatus = defaultStatus(subscriptionId);
+    this.subscriptionEndsOn = null;
   }
 
   public void addAddress(String label, String line1, String line2, String country, String province, String city, Coordinate coordinate) {
@@ -119,6 +130,14 @@ public class Patient extends AggregateRoot {
     return subscriptionId;
   }
 
+  public SubscriptionStatus getSubscriptionStatus() {
+    return subscriptionStatus;
+  }
+
+  public LocalDate getSubscriptionEndsOn() {
+    return subscriptionEndsOn;
+  }
+
   public List<Address> getAddresses() {
     return Collections.unmodifiableList(addresses);
   }
@@ -146,6 +165,30 @@ public class Patient extends AggregateRoot {
     this.cellphone = cellphone;
     this.document = document;
     this.subscriptionId = subscriptionId;
+    this.subscriptionStatus = defaultStatus(subscriptionId);
+    this.subscriptionEndsOn = null;
+  }
+
+  public boolean syncSubscription(UUID subscriptionId, SubscriptionStatus status, LocalDate endsOn) {
+    SubscriptionStatus nextStatus = status != null ? status : defaultStatus(subscriptionId);
+    boolean changed = !Objects.equals(this.subscriptionId, subscriptionId)
+      || this.subscriptionStatus != nextStatus
+      || !Objects.equals(this.subscriptionEndsOn, endsOn);
+    this.subscriptionId = subscriptionId;
+    this.subscriptionStatus = nextStatus;
+    this.subscriptionEndsOn = endsOn;
+    return changed;
+  }
+
+  public boolean removeSubscription(SubscriptionStatus finalStatus, LocalDate endsOn) {
+    SubscriptionStatus nextStatus = finalStatus != null ? finalStatus : SubscriptionStatus.CANCELLED;
+    boolean changed = this.subscriptionId != null
+      || this.subscriptionStatus != nextStatus
+      || !Objects.equals(this.subscriptionEndsOn, endsOn);
+    this.subscriptionId = null;
+    this.subscriptionStatus = nextStatus;
+    this.subscriptionEndsOn = endsOn;
+    return changed;
   }
 
   private Address getAddressById(UUID addressId) {
@@ -155,5 +198,9 @@ public class Patient extends AggregateRoot {
       }
     }
     return null;
+  }
+
+  private SubscriptionStatus defaultStatus(UUID subscriptionId) {
+    return subscriptionId != null ? SubscriptionStatus.ACTIVE : SubscriptionStatus.INACTIVE;
   }
 }

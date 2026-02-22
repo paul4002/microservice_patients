@@ -1,7 +1,7 @@
 # microservice_patients
 
 Microservicio de pacientes con DDD + CQRS usando Spring Boot, JPA y Pipelinr.
-Incluye Outbox + RabbitMQ para publicar eventos de dominio de forma atomica.
+Incluye Outbox + RabbitMQ para publicar eventos de dominio de forma atomica e inbox para reaccionar a eventos de suscripciones/contratos.
 
 ## Requisitos
 - Java 17+
@@ -37,6 +37,17 @@ RabbitMQ / Outbox:
 - `RABBITMQ_READ_WRITE_TIMEOUT`
 - `RABBITMQ_OUTBOX_BATCH_SIZE`
 - `RABBITMQ_OUTBOX_POLL_INTERVAL_MS`
+
+RabbitMQ / Inbound (suscripciones y contratos):
+- `INBOUND_RABBITMQ_ENABLED`
+- `INBOUND_RABBITMQ_EXCHANGE`
+- `INBOUND_RABBITMQ_EXCHANGE_TYPE`
+- `INBOUND_RABBITMQ_EXCHANGE_DURABLE`
+- `INBOUND_RABBITMQ_QUEUE`
+- `INBOUND_RABBITMQ_QUEUE_DURABLE`
+- `INBOUND_RABBITMQ_QUEUE_EXCLUSIVE`
+- `INBOUND_RABBITMQ_QUEUE_AUTO_DELETE`
+- `INBOUND_RABBITMQ_ROUTING_KEYS`
 
 Se incluye un `.env` con valores para pacientes.
 
@@ -107,9 +118,19 @@ Geocodificar direccion:
 ## Eventos publicados (Outbox)
 - `paciente.paciente-creado`
 - `paciente.paciente-actualizado`
+- `paciente.paciente-eliminado`
 - `paciente.direccion-creada`
 - `paciente.direccion-actualizada`
 - `paciente.direccion-geocodificada`
+- `paciente.suscripcion-actualizada`
+- `paciente.suscripcion-eliminada`
+
+## Eventos consumidos (Inbound)
+- `suscripciones.suscripcion-actualizada`
+- `suscripciones.suscripcion-eliminada`
+- `contrato.creado`
+- `contrato.cancelado`
+- `contrato.cancelar`
 
 ## Docker
 Levantar todo (API + Postgres + RabbitMQ):
