@@ -18,6 +18,7 @@ public class OutboxPublisherProperties {
   private boolean queueExclusive = false;
   private boolean queueAutoDelete = false;
   private String bindingKey = "";
+  private boolean declareTopology = false;
   private int publishRetries = 3;
   private long publishBackoffMs = 250;
   private int connectTimeoutSeconds = 3;
@@ -135,6 +136,14 @@ public class OutboxPublisherProperties {
 
   public void setBindingKey(String bindingKey) {
     this.bindingKey = bindingKey;
+  }
+
+  public boolean isDeclareTopology() {
+    return declareTopology;
+  }
+
+  public void setDeclareTopology(boolean declareTopology) {
+    this.declareTopology = declareTopology;
   }
 
   public int getPublishRetries() {

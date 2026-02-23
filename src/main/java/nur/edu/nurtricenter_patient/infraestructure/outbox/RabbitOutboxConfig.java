@@ -48,23 +48,26 @@ public class RabbitOutboxConfig {
   @Bean
   public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
     RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-    admin.setAutoStartup(true);
+    admin.setAutoStartup(false);
     return admin;
   }
 
   @Bean
   public Declarables rabbitOutboxDeclarables(OutboxPublisherProperties props) {
+    if (!props.isDeclareTopology()) {
+      return new Declarables();
+    }
     Exchange exchange = buildExchange(props);
 
     List<Declarable> declarables = new ArrayList<>();
     declarables.add(exchange);
 
     List<String> queueNames = resolveQueueNames(props.getQueue());
-    if (queueNames.isEmpty()) {
+    if (queueNames.isEmpty() && props.getQueue() != null && !props.getQueue().isBlank()) {
       Queue queue = buildQueue(props, props.getQueue());
       declarables.add(queue);
       declarables.add(buildBinding(queue, exchange, props.getBindingKey()));
-    } else {
+    } else if (!queueNames.isEmpty()) {
       for (String queueName : queueNames) {
         Queue queue = buildQueue(props, queueName);
         declarables.add(queue);

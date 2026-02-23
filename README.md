@@ -31,6 +31,7 @@ RabbitMQ / Outbox:
 - `RABBITMQ_QUEUE_EXCLUSIVE`
 - `RABBITMQ_QUEUE_AUTO_DELETE`
 - `RABBITMQ_BINDING_KEY`
+- `RABBITMQ_DECLARE_TOPOLOGY` (default `false` para broker externo)
 - `RABBITMQ_PUBLISH_RETRIES`
 - `RABBITMQ_PUBLISH_BACKOFF_MS`
 - `RABBITMQ_CONNECT_TIMEOUT`
@@ -127,6 +128,8 @@ Geocodificar direccion:
 - `paciente.direccion-geocodificada`
 - `paciente.suscripcion-actualizada`
 - `paciente.suscripcion-eliminada`
+
+Estandar de bus: este servicio publica en `outbox.events` (`fanout`) para alinearse con los otros microservicios.
 
 ## Eventos consumidos (Inbound)
 - `suscripciones.suscripcion-actualizada`
