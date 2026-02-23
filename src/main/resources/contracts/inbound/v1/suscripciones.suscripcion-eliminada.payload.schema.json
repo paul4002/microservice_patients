@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/inbound/v1/suscripciones.suscripcion-eliminada.payload.schema.json",
+  "title": "suscripciones.suscripcion-eliminada payload v1",
+  "type": "object",
+  "required": ["suscripcionId"],
+  "properties": {
+    "suscripcionId": { "type": "string", "format": "uuid" }
+  },
+  "additionalProperties": true
+}

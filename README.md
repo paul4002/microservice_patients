@@ -47,6 +47,9 @@ RabbitMQ / Inbound (suscripciones y contratos):
 - `INBOUND_RABBITMQ_QUEUE_DURABLE`
 - `INBOUND_RABBITMQ_QUEUE_EXCLUSIVE`
 - `INBOUND_RABBITMQ_QUEUE_AUTO_DELETE`
+- `INBOUND_RABBITMQ_DECLARE_TOPOLOGY` (default `false` para broker externo)
+- `INBOUND_RABBITMQ_FAIL_FAST_ON_MISSING_QUEUE` (default `false`)
+- `INBOUND_SCHEMA_VERSIONS`
 - `INBOUND_RABBITMQ_ROUTING_KEYS`
 
 Se incluye un `.env` con valores para pacientes.
@@ -132,8 +135,35 @@ Geocodificar direccion:
 - `contrato.cancelado`
 - `contrato.cancelar`
 
+El consumidor inbound usa inbox (`inbound_events`) para idempotencia por `event_id`.
+El envelope es obligatorio y se rechaza si faltan campos:
+`event_id`, `event`, `schema_version`, `correlation_id`, `occurred_on`, `payload`.
+
+## Observabilidad
+- Metricas: `GET /actuator/metrics`
+- Metricas inbound:
+  - `patients.inbound.events.received`
+  - `patients.inbound.events.processed`
+  - `patients.inbound.events.failed`
+  - `patients.inbound.events.duplicated`
+  - `patients.inbound.handler.latency`
+- Logs con correlacion via MDC (`correlation_id`) en listener y handlers.
+- Correlacion HTTP via header `X-Correlation-Id` (se acepta/genera y se retorna en response).
+
+## Gobierno de eventos y reglas de dominio
+- Politica de evolucion y compatibilidad: `docs/events/EVOLUTION_POLICY.md`
+- Reglas de negocio de suscripcion: `docs/domain/SUBSCRIPTION_BUSINESS_RULES.md`
+- Integracion API Gateway y otros micros: `docs/integration/API_GATEWAY_AND_MICROS.md`
+
+## DDL de endurecimiento
+Para ambientes ya creados, aplicar:
+
+```bash
+psql -U postgres -h localhost -d nurtricenter_patient_db -f docs/db/2026-02-23_inbound_events_hardening.sql
+```
+
 ## Docker
-Levantar todo (API + Postgres + RabbitMQ):
+Levantar todo (API + Postgres; RabbitMQ es externo):
 ```bash
 docker compose up --build
 ```
@@ -141,8 +171,7 @@ docker compose up --build
 Servicios:
 - API: `http://localhost:8080`
 - Postgres: `localhost:5432`
-- RabbitMQ: `localhost:5672`
-- RabbitMQ UI: `http://localhost:15672` (admin / rabbit_mq)
+- RabbitMQ: externo, configurado por `.env` (`RABBITMQ_HOST`, `RABBITMQ_PORT`, etc.)
 
 Bajar:
 ```bash
@@ -150,6 +179,47 @@ docker compose down
 ```
 
 Datos persistentes en volumen `pgdata`.
+
+## Smoke E2E de eventos críticos
+Con el stack levantado (`docker compose up -d --build`):
+
+1) Provisionar RabbitMQ externo (idempotente):
+```bash
+./scripts/e2e/provision_inbound_rabbit.sh
+```
+
+2) Ejecutar smoke:
+```bash
+./scripts/e2e/inbound_critical_events_smoke.sh
+```
+
+Este script publica:
+- `suscripciones.suscripcion-actualizada`
+- `suscripciones.suscripcion-eliminada`
+- `contrato.creado`
+- `contrato.cancelar`
+- `contrato.cancelado`
+- un `contrato.cancelar` invalido (sin `contratoId`) para validar `FAILED`
+
+Y valida en DB:
+- resumen por estado en `inbound_events`
+- ultimos eventos (`PROCESSED/FAILED`)
+
+Variables utiles para RabbitMQ externo en el script:
+- `RABBIT_MGMT_HOST` (default `154.38.180.80`)
+- `RABBIT_MGMT_PORT` (default `15672`)
+- `RABBIT_USER`
+- `RABBIT_PASS`
+
+Si ves `NOT_FOUND - no queue 'pacientes.inbound'`, ejecuta primero `provision_inbound_rabbit.sh`.
+Si ves `PRECONDITION_FAILED ... exchange 'outbox.events' ... received 'topic' but current is 'fanout'`,
+configura `INBOUND_RABBITMQ_EXCHANGE_TYPE=fanout` (default recomendado).
+Si la cola aun no existe, el listener inbound queda deshabilitado automaticamente en arranque
+hasta que la cola sea aprovisionada y se reinicie el servicio.
+Para entornos externos, el default recomendado es no cortar arranque si la cola aun no existe:
+`INBOUND_RABBITMQ_FAIL_FAST_ON_MISSING_QUEUE=false`.
+Si deseas modo estricto, habilita:
+`INBOUND_RABBITMQ_FAIL_FAST_ON_MISSING_QUEUE=true`.
 
 
 psql -U postgres -h localhost -p 5432

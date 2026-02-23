@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/inbound/v1/envelope.schema.json",
+  "title": "Inbound Event Envelope v1",
+  "type": "object",
+  "required": ["event_id", "event", "schema_version", "correlation_id", "occurred_on", "payload"],
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event": { "type": "string", "minLength": 1 },
+    "schema_version": { "type": "integer", "const": 1 },
+    "correlation_id": { "type": "string", "format": "uuid" },
+    "occurred_on": { "type": "string", "format": "date-time" },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": true
+}

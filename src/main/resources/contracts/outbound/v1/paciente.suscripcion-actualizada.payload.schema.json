@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/outbound/v1/paciente.suscripcion-actualizada.payload.schema.json",
+  "title": "paciente.suscripcion-actualizada payload v1",
+  "type": "object",
+  "required": ["pacienteId", "suscripcionId", "estadoSuscripcion", "eventoOrigen"],
+  "properties": {
+    "pacienteId": { "type": "string", "format": "uuid" },
+    "suscripcionId": { "type": ["string", "null"], "format": "uuid" },
+    "estadoSuscripcion": { "type": ["string", "null"] },
+    "fechaFinSuscripcion": { "type": ["string", "null"] },
+    "eventoOrigen": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

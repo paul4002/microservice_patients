@@ -51,8 +51,8 @@ class OutboxPublisherTest {
     verify(repository).save(event);
 
     JsonNode envelope = objectMapper.readTree(messageCaptor.getValue());
-    assertEquals("PatientCreatedEvent", envelope.get("event_name").asText());
-    assertEquals("PatientCreatedEvent", envelope.get("event").asText());
+    assertEquals("paciente.paciente-creado", envelope.get("event_name").asText());
+    assertEquals("paciente.paciente-creado", envelope.get("event").asText());
     assertEquals(1, envelope.get("schema_version").asInt());
     assertEquals(patientId.toString(), envelope.get("aggregate_id").asText());
 
@@ -96,7 +96,7 @@ class OutboxPublisherTest {
     verify(repository).save(event);
 
     JsonNode envelope = objectMapper.readTree(messageCaptor.getValue());
-    assertEquals("PatientUpdatedEvent", envelope.get("event_name").asText());
+    assertEquals("paciente.paciente-actualizado", envelope.get("event_name").asText());
     assertEquals(1, envelope.get("schema_version").asInt());
     JsonNode payload = envelope.get("payload");
     assertEquals(patientId.toString(), payload.get("pacienteId").asText());
@@ -129,7 +129,7 @@ class OutboxPublisherTest {
     verify(repository).save(event);
 
     JsonNode envelope = objectMapper.readTree(messageCaptor.getValue());
-    assertEquals("PatientDeletedEvent", envelope.get("event_name").asText());
+    assertEquals("paciente.paciente-eliminado", envelope.get("event_name").asText());
     JsonNode payload = envelope.get("payload");
     assertEquals(1, payload.size());
     assertEquals(patientId.toString(), payload.get("pacienteId").asText());

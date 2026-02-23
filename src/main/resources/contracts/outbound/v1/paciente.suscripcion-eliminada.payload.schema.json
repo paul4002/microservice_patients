@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/outbound/v1/paciente.suscripcion-eliminada.payload.schema.json",
+  "title": "paciente.suscripcion-eliminada payload v1",
+  "type": "object",
+  "required": ["pacienteId", "motivo", "eventoOrigen"],
+  "properties": {
+    "pacienteId": { "type": "string", "format": "uuid" },
+    "suscripcionIdAnterior": { "type": ["string", "null"], "format": "uuid" },
+    "motivo": { "type": ["string", "null"] },
+    "eventoOrigen": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

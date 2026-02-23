@@ -39,7 +39,7 @@ class OutboxEventMapperTest {
 
     assertNotNull(entity.getId());
     assertEquals(event.getId(), entity.getEventId());
-    assertEquals("PatientCreatedEvent", entity.getEventName());
+    assertEquals("paciente.paciente-creado", entity.getEventName());
     assertEquals("paciente.paciente-creado", entity.getRoutingKey());
     assertEquals(1, entity.getSchemaVersion());
     assertEquals(correlationId, entity.getCorrelationId());

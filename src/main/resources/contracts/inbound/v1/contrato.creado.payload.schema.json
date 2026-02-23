@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/inbound/v1/contrato.creado.payload.schema.json",
+  "title": "contrato.creado payload v1",
+  "type": "object",
+  "required": ["contratoId", "pacienteId", "tipoServicio", "fechaInicio", "fechaFin"],
+  "properties": {
+    "contratoId": { "type": "string", "format": "uuid" },
+    "pacienteId": { "type": "string", "format": "uuid" },
+    "tipoServicio": { "type": "string", "minLength": 1 },
+    "fechaInicio": { "type": "string" },
+    "fechaFin": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/outbound/v1/paciente.paciente-eliminado.payload.schema.json",
+  "title": "paciente.paciente-eliminado payload v1",
+  "type": "object",
+  "required": ["pacienteId"],
+  "properties": {
+    "pacienteId": { "type": "string", "format": "uuid" }
+  },
+  "additionalProperties": true
+}

@@ -101,10 +101,16 @@ public class OutboxPublisher {
   }
 
   private String resolveEventName(OutboxEventEntity event) {
-    if (event.getEventName() != null && !event.getEventName().isBlank() && !event.getEventName().contains(".")) {
+    if (event.getEventName() != null && !event.getEventName().isBlank() && event.getEventName().contains(".")) {
       return event.getEventName();
     }
-    if (event.getEventType() != null && !event.getEventType().isBlank() && !event.getEventType().contains(".")) {
+    if (event.getRoutingKey() != null && !event.getRoutingKey().isBlank()) {
+      return event.getRoutingKey();
+    }
+    if (event.getEventName() != null && !event.getEventName().isBlank()) {
+      return event.getEventName();
+    }
+    if (event.getEventType() != null && !event.getEventType().isBlank()) {
       return event.getEventType();
     }
     return "UnknownEvent";

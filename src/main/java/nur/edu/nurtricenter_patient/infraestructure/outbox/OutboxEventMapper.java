@@ -23,7 +23,7 @@ public class OutboxEventMapper {
     entity.setAggregateType(event.getAggregateType());
     entity.setAggregateId(event.getAggregateId());
     entity.setEventType(event.getEventType());
-    entity.setEventName(event.getEventType());
+    entity.setEventName(event.getEventName());
     entity.setRoutingKey(event.getEventName());
     entity.setSchemaVersion(1);
     entity.setCorrelationId(resolveCorrelationId());

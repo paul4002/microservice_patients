@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/inbound/v1/suscripciones.suscripcion-actualizada.payload.schema.json",
+  "title": "suscripciones.suscripcion-actualizada payload v1",
+  "type": "object",
+  "required": ["suscripcionId", "nombre"],
+  "properties": {
+    "suscripcionId": { "type": "string", "format": "uuid" },
+    "nombre": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

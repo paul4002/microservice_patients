@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/inbound/v1/contrato.cancelado.payload.schema.json",
+  "title": "contrato.cancelado payload v1",
+  "type": "object",
+  "required": ["contratoId", "motivoCancelacion"],
+  "properties": {
+    "contratoId": { "type": "string", "format": "uuid" },
+    "motivoCancelacion": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

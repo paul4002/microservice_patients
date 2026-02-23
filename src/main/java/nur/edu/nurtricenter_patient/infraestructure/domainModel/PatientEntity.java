@@ -35,9 +35,12 @@ public class PatientEntity {
   private Cellphone cellphone;
   @jakarta.persistence.Column(unique = true)
   private String document;
+  @jakarta.persistence.Column(name = "subscription_id")
   private UUID subscriptionId;
+  @jakarta.persistence.Column(name = "subscription_status")
   @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
   private SubscriptionStatus subscriptionStatus;
+  @jakarta.persistence.Column(name = "subscription_ends_on")
   private LocalDate subscriptionEndsOn;
 
   @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)

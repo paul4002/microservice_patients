@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nurtricenter/contracts/outbound/v1/paciente.paciente-creado.payload.schema.json",
+  "title": "paciente.paciente-creado payload v1",
+  "type": "object",
+  "required": ["pacienteId", "nombre", "documento"],
+  "properties": {
+    "pacienteId": { "type": "string", "format": "uuid" },
+    "nombre": { "type": "string", "minLength": 1 },
+    "documento": { "type": "string", "minLength": 1 },
+    "suscripcionId": { "type": ["string", "null"], "format": "uuid" }
+  },
+  "additionalProperties": true
+}
