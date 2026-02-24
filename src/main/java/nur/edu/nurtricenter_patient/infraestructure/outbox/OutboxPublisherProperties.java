@@ -21,8 +21,8 @@ public class OutboxPublisherProperties {
   private boolean declareTopology = false;
   private int publishRetries = 3;
   private long publishBackoffMs = 250;
-  private int connectTimeoutSeconds = 3;
-  private int readWriteTimeoutSeconds = 3;
+  private int connectTimeoutSeconds = 5;
+  private int readWriteTimeoutSeconds = 5;
   private int outboxBatchSize = 50;
   private long outboxPollIntervalMs = 1000;
 

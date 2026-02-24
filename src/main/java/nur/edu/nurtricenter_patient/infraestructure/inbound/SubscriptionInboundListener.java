@@ -26,6 +26,7 @@ import nur.edu.nurtricenter_patient.core.results.Result;
 @Component
 public class SubscriptionInboundListener {
   private static final Logger log = LoggerFactory.getLogger(SubscriptionInboundListener.class);
+  private static final Logger auditLog = LoggerFactory.getLogger("rabbit.audit.inbound");
 
   private final Pipeline pipeline;
   private final ObjectMapper objectMapper;
@@ -53,6 +54,12 @@ public class SubscriptionInboundListener {
       String body = new String(message.getBody(), StandardCharsets.UTF_8);
       Map<String, Object> parsed = objectMapper.readValue(body, new TypeReference<Map<String, Object>>() {});
 
+      String exchange = message.getMessageProperties() != null
+        ? message.getMessageProperties().getReceivedExchange()
+        : null;
+      String queue = message.getMessageProperties() != null
+        ? message.getMessageProperties().getConsumerQueue()
+        : null;
       String routingKey = message.getMessageProperties() != null
         ? message.getMessageProperties().getReceivedRoutingKey()
         : null;
@@ -69,6 +76,16 @@ public class SubscriptionInboundListener {
       String occurredOn = readRequiredString(parsed, "occurred_on", "occurredOn");
       validateOccurredOn(occurredOn);
       metrics.incrementReceived(eventName);
+      auditLog.info(
+        "Rabbit inbound received: event={} eventId={} correlationId={} schemaVersion={} exchange={} routingKey={} queue={}",
+        eventName,
+        eventId,
+        correlationId,
+        schemaVersion,
+        exchange,
+        routingKey,
+        queue
+      );
 
       try (
         MDC.MDCCloseable ignoredCorrelation = putMdc("correlation_id", correlationId != null ? correlationId.toString() : null);
@@ -86,18 +103,36 @@ public class SubscriptionInboundListener {
         ).execute(pipeline);
         if (result.isFailure()) {
           log.warn("Inbound subscription event failed: event={} routingKey={} error={}", eventName, routingKey, result.getError().getDescription());
+          auditLog.warn(
+            "Rabbit inbound failed: event={} eventId={} correlationId={} routingKey={} error={}",
+            eventName,
+            eventId,
+            correlationId,
+            routingKey,
+            result.getError().getDescription()
+          );
           if (result.getError().getType() == ErrorType.VALIDATION || result.getError().getType() == ErrorType.CONFLICT || result.getError().getType() == ErrorType.NOT_FOUND) {
             throw new AmqpRejectAndDontRequeueException(result.getError().getDescription());
           }
           throw new IllegalStateException(result.getError().getDescription());
         }
+        auditLog.info(
+          "Rabbit inbound processed: event={} eventId={} correlationId={} routingKey={}",
+          eventName,
+          eventId,
+          correlationId,
+          routingKey
+        );
       }
     } catch (AmqpRejectAndDontRequeueException ex) {
+      auditLog.warn("Rabbit inbound rejected: reason={}", ex.getMessage());
       throw ex;
     } catch (IllegalStateException ex) {
+      auditLog.error("Rabbit inbound processing error: reason={}", ex.getMessage());
       throw ex;
     } catch (Exception ex) {
       log.error("Inbound subscription message parse failure", ex);
+      auditLog.error("Rabbit inbound parse failure: reason={}", ex.getMessage());
       throw new AmqpRejectAndDontRequeueException("Inbound message rejected", ex);
     }
   }

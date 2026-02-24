@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,10 +28,11 @@ class OutboxPublisherTest {
   void publishSingle_shouldPublishEnvelopeForPatientCreated() throws IOException {
     OutboxEventRepository repository = mock(OutboxEventRepository.class);
     RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
+    RabbitAdmin rabbitAdmin = mock(RabbitAdmin.class);
     OutboxPublisherProperties props = new OutboxPublisherProperties();
-    props.setExchange("pacientes.events");
+    props.setExchange("outbox.events");
 
-    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, props, objectMapper);
+    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper);
 
     UUID patientId = UUID.randomUUID();
     UUID eventId = UUID.randomUUID();
@@ -47,7 +49,7 @@ class OutboxPublisherTest {
     publisher.publishSingle(event);
 
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    verify(rabbitTemplate).convertAndSend(eq("pacientes.events"), eq("paciente.paciente-creado"), messageCaptor.capture());
+    verify(rabbitTemplate).convertAndSend(eq("outbox.events"), eq("paciente.paciente-creado"), messageCaptor.capture());
     verify(repository).save(event);
 
     JsonNode envelope = objectMapper.readTree(messageCaptor.getValue());
@@ -73,10 +75,11 @@ class OutboxPublisherTest {
   void publishSingle_shouldPublishEnvelopeForPatientUpdated() throws IOException {
     OutboxEventRepository repository = mock(OutboxEventRepository.class);
     RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
+    RabbitAdmin rabbitAdmin = mock(RabbitAdmin.class);
     OutboxPublisherProperties props = new OutboxPublisherProperties();
-    props.setExchange("pacientes.events");
+    props.setExchange("outbox.events");
 
-    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, props, objectMapper);
+    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper);
 
     UUID patientId = UUID.randomUUID();
     UUID subscriptionId = UUID.randomUUID();
@@ -92,7 +95,7 @@ class OutboxPublisherTest {
     publisher.publishSingle(event);
 
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    verify(rabbitTemplate).convertAndSend(eq("pacientes.events"), eq("paciente.paciente-actualizado"), messageCaptor.capture());
+    verify(rabbitTemplate).convertAndSend(eq("outbox.events"), eq("paciente.paciente-actualizado"), messageCaptor.capture());
     verify(repository).save(event);
 
     JsonNode envelope = objectMapper.readTree(messageCaptor.getValue());
@@ -107,10 +110,11 @@ class OutboxPublisherTest {
   void publishSingle_shouldPublishEnvelopeForPatientDeletedWithMinimalPayload() throws IOException {
     OutboxEventRepository repository = mock(OutboxEventRepository.class);
     RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
+    RabbitAdmin rabbitAdmin = mock(RabbitAdmin.class);
     OutboxPublisherProperties props = new OutboxPublisherProperties();
-    props.setExchange("pacientes.events");
+    props.setExchange("outbox.events");
 
-    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, props, objectMapper);
+    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper);
 
     UUID patientId = UUID.randomUUID();
     OutboxEventEntity event = buildOutboxEvent(
@@ -125,7 +129,7 @@ class OutboxPublisherTest {
     publisher.publishSingle(event);
 
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    verify(rabbitTemplate).convertAndSend(eq("pacientes.events"), eq("paciente.paciente-eliminado"), messageCaptor.capture());
+    verify(rabbitTemplate).convertAndSend(eq("outbox.events"), eq("paciente.paciente-eliminado"), messageCaptor.capture());
     verify(repository).save(event);
 
     JsonNode envelope = objectMapper.readTree(messageCaptor.getValue());

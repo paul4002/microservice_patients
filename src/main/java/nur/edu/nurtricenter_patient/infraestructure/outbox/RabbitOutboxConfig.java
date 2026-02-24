@@ -21,10 +21,13 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 @EnableConfigurationProperties(OutboxPublisherProperties.class)
 public class RabbitOutboxConfig {
+  private static final Logger auditLog = LoggerFactory.getLogger("rabbit.audit.outbound");
 
   @Bean
   public ConnectionFactory rabbitConnectionFactory(OutboxPublisherProperties props) {
@@ -35,6 +38,8 @@ public class RabbitOutboxConfig {
     factory.setPassword(props.getPassword());
     factory.setVirtualHost(props.getVhost());
     factory.setConnectionTimeout(props.getConnectTimeoutSeconds() * 1000);
+    factory.setPublisherReturns(true);
+    factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
     return factory;
   }
 
@@ -42,6 +47,26 @@ public class RabbitOutboxConfig {
   public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, OutboxPublisherProperties props) {
     RabbitTemplate template = new RabbitTemplate(connectionFactory);
     template.setReplyTimeout(props.getReadWriteTimeoutSeconds() * 1000L);
+    template.setMandatory(true);
+    template.setReturnsCallback(returned ->
+      auditLog.error(
+        "Rabbit outbound returned (unroutable): exchange={} routingKey={} replyCode={} replyText={} message={}",
+        returned.getExchange(),
+        returned.getRoutingKey(),
+        returned.getReplyCode(),
+        returned.getReplyText(),
+        returned.getMessage() != null ? new String(returned.getMessage().getBody()) : null
+      )
+    );
+    template.setConfirmCallback((correlationData, ack, cause) -> {
+      if (!ack) {
+        auditLog.error(
+          "Rabbit outbound nack: correlation={} cause={}",
+          correlationData != null ? correlationData.getId() : null,
+          cause
+        );
+      }
+    });
     return template;
   }
 

@@ -32,7 +32,7 @@ import nur.edu.nurtricenter_patient.core.results.Result;
 import nur.edu.nurtricenter_patient.core.results.ResultWithValue;
 
 @RestController
-@RequestMapping("/api/patient")
+@RequestMapping({"/api/patient", "/api/patients"})
 public class PatientController {
 
   private final Pipeline pipeline;
@@ -80,7 +80,7 @@ public class PatientController {
     return toResponse(result, HttpStatus.NO_CONTENT);
   }
 
-  @PostMapping("/{id}/address")
+  @PostMapping({"/{id}/address", "/{id}/addresses"})
   public ResponseEntity<ResultWithValue<UUID>> addAddress(@PathVariable UUID id, @RequestBody AddAddressCommand command) {
     ResultWithValue<UUID> result = new AddAddressCommand(
       id,
@@ -96,7 +96,7 @@ public class PatientController {
     return toResponse(result, HttpStatus.CREATED);
   }
 
-  @PutMapping("/{id}/address/{addressId}")
+  @PutMapping({"/{id}/address/{addressId}", "/{id}/addresses/{addressId}"})
   public ResponseEntity<Result> updateAddress(@PathVariable UUID id, @PathVariable UUID addressId, @RequestBody UpdateAddressCommand command) {
     Result result = new UpdateAddressCommand(
       id,
@@ -113,7 +113,7 @@ public class PatientController {
     return toResponse(result, HttpStatus.OK);
   }
 
-  @PutMapping("/{id}/address/{addressId}/geo")
+  @PutMapping({"/{id}/address/{addressId}/geo", "/{id}/addresses/{addressId}/geo"})
   public ResponseEntity<Result> geocodeAddress(@PathVariable UUID id, @PathVariable UUID addressId, @RequestBody GeocodeAddressCommand command) {
     Result result = new GeocodeAddressCommand(
       id,
@@ -124,13 +124,13 @@ public class PatientController {
     return toResponse(result, HttpStatus.OK);
   }
 
-  @DeleteMapping("/{id}/address/{addressId}")
+  @DeleteMapping({"/{id}/address/{addressId}", "/{id}/addresses/{addressId}"})
   public ResponseEntity<Result> deactivateAddress(@PathVariable UUID id, @PathVariable UUID addressId) {
     Result result = new DeactivateAddressCommand(id, addressId).execute(pipeline);
     return toResponse(result, HttpStatus.NO_CONTENT);
   }
 
-  @GetMapping("/{id}/address")
+  @GetMapping({"/{id}/address", "/{id}/addresses"})
   public ResponseEntity<ResultWithValue<List<AddressDto>>> getAddresses(@PathVariable UUID id) {
     ResultWithValue<List<AddressDto>> result = new GetAddressesQuery(id).execute(pipeline);
     return toResponse(result, HttpStatus.OK);
