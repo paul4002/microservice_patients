@@ -15,6 +15,15 @@ Variables de entorno:
 - `DB_USER` (por defecto `postgres`)
 - `DB_PASSWORD` (por defecto `admin`)
 
+Keycloak / Auth (alineado con `microservicio-produccion-cocina`):
+- `KEYCLOAK_BASE_URL`
+- `KEYCLOAK_REALM`
+- `KEYCLOAK_CLIENT_ID`
+- `KEYCLOAK_CLIENT_SECRET`
+- `KEYCLOAK_ISSUER`
+- `KEYCLOAK_JWKS_TTL`
+- `KEYCLOAK_BLOCKED_USERS` (lista separada por comas con `sub` o `preferred_username`)
+
 RabbitMQ / Outbox:
 - `EVENTBUS_DRIVER` (default `rabbitmq`)
 - `RABBITMQ_HOST`
@@ -56,6 +65,8 @@ RabbitMQ / Inbound (suscripciones y contratos):
 Se incluye un `.env` con valores para pacientes.
 
 ## Endpoints
+- `POST /api/login` (sin token, proxy a Keycloak password grant)
+- `POST /api/refresh` (sin token, recibe `refresh_token`)
 - `POST /api/patient`
 - `GET /api/patient/{id}`
 - `GET /api/patient`
@@ -69,7 +80,26 @@ Direcciones:
 - `PUT /api/patient/{id}/address/{addressId}/geo`
 - `DELETE /api/patient/{id}/address/{addressId}`
 
+Autorizacion:
+- Todos los endpoints `/api/patient**` requieren `Authorization: Bearer <access_token>`.
+- Roles admitidos para lectura: `cocinero`, `planificador`, `despachador`, `produccion`.
+- Roles admitidos para escritura: `planificador`, `produccion`.
+
 ## Ejemplos
+Login:
+```bash
+curl -s -X POST http://localhost:8080/api/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"<usuario-keycloak>","password":"<password-keycloak>"}'
+```
+
+Refresh:
+```bash
+curl -s -X POST http://localhost:8080/api/refresh \
+  -H 'Content-Type: application/json' \
+  -d '{"refresh_token":"<refresh_token>"}'
+```
+
 Crear paciente:
 ```json
 {
