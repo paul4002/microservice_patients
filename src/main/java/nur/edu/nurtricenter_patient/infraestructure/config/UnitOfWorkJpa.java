@@ -2,7 +2,6 @@ package nur.edu.nurtricenter_patient.infraestructure.config;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,6 @@ public class UnitOfWorkJpa implements IUnitOfWork {
   private final EntityManager em;
   private final OutboxEventRepository outboxRepository;
   private final OutboxEventMapper mapper;
-  
 
   public UnitOfWorkJpa(EntityManager em, OutboxEventRepository outboxRepository, ObjectMapper objectMapper) {
     this.em = em;
@@ -32,7 +30,7 @@ public class UnitOfWorkJpa implements IUnitOfWork {
 
   @Override
   @Transactional
-  public CompletableFuture<Void> commitAsync(AggregateRoot... aggregates) {
+  public void commit(AggregateRoot... aggregates) {
     List<DomainEvent> events = new ArrayList<>();
     if (aggregates != null) {
       for (AggregateRoot aggregate : aggregates) {
@@ -56,6 +54,5 @@ public class UnitOfWorkJpa implements IUnitOfWork {
         }
       }
     }
-    return CompletableFuture.completedFuture(null);
   }
 }

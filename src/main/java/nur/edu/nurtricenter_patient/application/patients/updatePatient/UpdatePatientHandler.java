@@ -12,8 +12,6 @@ import nur.edu.nurtricenter_patient.domain.patient.Email;
 import nur.edu.nurtricenter_patient.domain.patient.IPatientRepository;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
 import nur.edu.nurtricenter_patient.domain.patient.PatientErrors;
-import nur.edu.nurtricenter_patient.domain.patient.events.PatientUpdatedEvent;
-
 @Component
 public class UpdatePatientHandler implements Command.Handler<UpdatePatientCommand, Result> {
   private final IPatientRepository patientRepository;
@@ -54,13 +52,7 @@ public class UpdatePatientHandler implements Command.Handler<UpdatePatientComman
       return Result.failure(e.getError());
     }
     patientRepository.update(patient);
-    patient.addDomainEvent(new PatientUpdatedEvent(
-      patient.getId(),
-      patient.getName() + " " + patient.getLastname(),
-      patient.getDocument(),
-      patient.getSubscriptionId()
-    ));
-    unitOfWork.commitAsync(patient);
+    unitOfWork.commit(patient);
     return Result.success();
   }
 }

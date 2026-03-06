@@ -14,7 +14,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import nur.edu.nurtricenter_patient.domain.patient.Cellphone;
 import nur.edu.nurtricenter_patient.domain.patient.Email;
-import nur.edu.nurtricenter_patient.domain.patient.Patient;
 import nur.edu.nurtricenter_patient.domain.patient.SubscriptionStatus;
 import nur.edu.nurtricenter_patient.infraestructure.domainModel.converters.CellphoneConverter;
 import nur.edu.nurtricenter_patient.infraestructure.domainModel.converters.EmailConverter;
@@ -113,46 +112,4 @@ public class PatientEntity {
     this.addresses = addresses;
   }
 
-  public static PatientEntity fromDomain(Patient patient) {
-    PatientEntity patientEntity = new PatientEntity();
-    patientEntity.id = patient.getId();
-    patientEntity.name = patient.getName();
-    patientEntity.lastname = patient.getLastname();
-    patientEntity.birthDate = patient.getBirthDate();
-    patientEntity.email = patient.getEmail();
-    patientEntity.cellphone = patient.getCellphone();
-    patientEntity.document = patient.getDocument();
-    patientEntity.subscriptionId = patient.getSubscriptionId();
-    patientEntity.subscriptionStatus = patient.getSubscriptionStatus();
-    patientEntity.subscriptionEndsOn = patient.getSubscriptionEndsOn();
-    patientEntity.addresses = new ArrayList<>();
-    for (var address : patient.getAddresses()) {
-      patientEntity.addresses.add(AddressEntity.fromDomain(address, patientEntity));
-    }
-    return patientEntity;
-  }
-
-  public static Patient toDomain(PatientEntity entity) {
-    if (entity == null) {
-      return null;
-    }
-    Patient patient = new Patient(
-      entity.id,
-      entity.name,
-      entity.lastname,
-      entity.birthDate,
-      entity.email,
-      entity.cellphone,
-      entity.document,
-      entity.subscriptionId,
-      entity.subscriptionStatus,
-      entity.subscriptionEndsOn
-    );
-    if (entity.addresses != null) {
-      for (var addressEntity : entity.addresses) {
-        patient.restoreAddress(AddressEntity.toDomain(addressEntity));
-      }
-    }
-    return patient;
-  }
 }

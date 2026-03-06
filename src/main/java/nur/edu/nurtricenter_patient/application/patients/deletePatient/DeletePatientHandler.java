@@ -9,8 +9,6 @@ import nur.edu.nurtricenter_patient.core.results.Result;
 import nur.edu.nurtricenter_patient.domain.patient.IPatientRepository;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
 import nur.edu.nurtricenter_patient.domain.patient.PatientErrors;
-import nur.edu.nurtricenter_patient.domain.patient.events.PatientDeletedEvent;
-
 @Component
 public class DeletePatientHandler implements Command.Handler<DeletePatientCommand, Result> {
   private final IPatientRepository patientRepository;
@@ -28,9 +26,9 @@ public class DeletePatientHandler implements Command.Handler<DeletePatientComman
     if (patient == null) {
       return Result.failure(PatientErrors.PatientNotFound(request.id().toString()));
     }
-    patient.addDomainEvent(new PatientDeletedEvent(patient.getId()));
+    patient.markAsDeleted();
     patientRepository.remove(request.id());
-    unitOfWork.commitAsync(patient);
+    unitOfWork.commit(patient);
     return Result.success();
   }
 }

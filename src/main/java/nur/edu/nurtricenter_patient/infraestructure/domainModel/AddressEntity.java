@@ -9,8 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import nur.edu.nurtricenter_patient.domain.address.Address;
-import nur.edu.nurtricenter_patient.domain.address.Coordinate;
 
 @Entity
 @Table(name = "addresses")
@@ -125,27 +123,4 @@ public class AddressEntity {
     this.state = state;
   }
 
-  public static AddressEntity fromDomain(Address address, PatientEntity patient) {
-    AddressEntity entity = new AddressEntity();
-    entity.id = address.getId();
-    entity.patient = patient;
-    entity.label = address.getLabel();
-    entity.line1 = address.getLine1();
-    entity.line2 = address.getLine2();
-    entity.country = address.getCountry();
-    entity.province = address.getProvince();
-    entity.city = address.getCity();
-    entity.latitude = address.getCoordinate().latitude();
-    entity.longitude = address.getCoordinate().longitude();
-    entity.state = address.isActive();
-    return entity;
-  }
-
-  public static Address toDomain(AddressEntity entity) {
-    if (entity == null) {
-      return null;
-    }
-    Coordinate coordinate = new Coordinate(entity.latitude, entity.longitude);
-    return new Address(entity.id, entity.label, entity.line1, entity.line2, entity.country, entity.province, entity.city, coordinate, entity.state);
-  }
 }

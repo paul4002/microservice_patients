@@ -11,8 +11,6 @@ import nur.edu.nurtricenter_patient.domain.address.Coordinate;
 import nur.edu.nurtricenter_patient.domain.patient.IPatientRepository;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
 import nur.edu.nurtricenter_patient.domain.patient.PatientErrors;
-import nur.edu.nurtricenter_patient.domain.patient.events.AddressGeocodedEvent;
-
 @Component
 public class GeocodeAddressHandler implements Command.Handler<GeocodeAddressCommand, Result> {
   private final IPatientRepository patientRepository;
@@ -36,8 +34,7 @@ public class GeocodeAddressHandler implements Command.Handler<GeocodeAddressComm
       return Result.failure(e.getError());
     }
     patientRepository.update(patient);
-    patient.addDomainEvent(new AddressGeocodedEvent(patient.getId(), request.addressId(), request.latitude(), request.longitude()));
-    unitOfWork.commitAsync(patient);
+    unitOfWork.commit(patient);
     return Result.success();
   }
 }

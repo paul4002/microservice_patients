@@ -13,7 +13,6 @@ import nur.edu.nurtricenter_patient.domain.patient.Email;
 import nur.edu.nurtricenter_patient.domain.patient.IPatientRepository;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
 import nur.edu.nurtricenter_patient.domain.patient.PatientErrors;
-import nur.edu.nurtricenter_patient.domain.patient.events.PatientCreatedEvent;
 
 @Component
 public class CreatePatientHandler implements Command.Handler<CreatePatientCommand, ResultWithValue<UUID>> {
@@ -30,14 +29,14 @@ public class CreatePatientHandler implements Command.Handler<CreatePatientComman
   public ResultWithValue<UUID> handle(CreatePatientCommand request) {
     Patient patient;
     try {
-      patient = new Patient(
-        request.name(),
-        request.lastname(),
-        request.birthDate(),
-        new Email(request.email()),
-        new Cellphone(request.cellphone()),
-        request.document(),
-        request.subscriptionId()
+      patient = Patient.create(
+          request.name(),
+          request.lastname(),
+          request.birthDate(),
+          new Email(request.email()),
+          new Cellphone(request.cellphone()),
+          request.document(),
+          request.subscriptionId()
       );
     } catch (DomainException e) {
       return ResultWithValue.fail(e.getError());
@@ -51,14 +50,8 @@ public class CreatePatientHandler implements Command.Handler<CreatePatientComman
     if (patientRepository.existsByDocument(patient.getDocument())) {
       return ResultWithValue.fail(PatientErrors.DocumentAlreadyExists(patient.getDocument()));
     }
-    this.patientRepository.add(patient);
-    patient.addDomainEvent(new PatientCreatedEvent(
-      patient.getId(),
-      patient.getName() + " " + patient.getLastname(),
-      patient.getDocument(),
-      patient.getSubscriptionId()
-    ));
-    this.unitOfWork.commitAsync(patient);
+    patientRepository.add(patient);
+    unitOfWork.commit(patient);
     return ResultWithValue.success(patient.getId());
   }
 }

@@ -4,86 +4,88 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import nur.edu.nurtricenter_patient.domain.patient.Cellphone;
+import nur.edu.nurtricenter_patient.domain.patient.Email;
 import nur.edu.nurtricenter_patient.domain.patient.IPatientRepository;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
-import nur.edu.nurtricenter_patient.infraestructure.domainModel.PatientEntity;
+import nur.edu.nurtricenter_patient.infraestructure.domainModel.PatientEntityMapper;
 
 @Repository
 public class PatientEntityJpaRepository implements IPatientRepository {
 
-  @Autowired
-  private PatientEntityRepository patientEntityRepository;
+  private final PatientEntityRepository jpaRepository;
+
+  public PatientEntityJpaRepository(PatientEntityRepository jpaRepository) {
+    this.jpaRepository = jpaRepository;
+  }
 
   @Override
   public UUID add(Patient patient) {
-    PatientEntity entity = PatientEntity.fromDomain(patient);
-    this.patientEntityRepository.save(entity);
+    jpaRepository.save(PatientEntityMapper.toEntity(patient));
     return patient.getId();
   }
 
   @Override
   public Patient getById(UUID id) {
-    return this.patientEntityRepository.findById(id)
-      .map(PatientEntity::toDomain)
-      .orElse(null);
+    return jpaRepository.findById(id)
+        .map(PatientEntityMapper::toDomain)
+        .orElse(null);
   }
 
   @Override
   public List<Patient> getAll() {
     List<Patient> result = new ArrayList<>();
-    this.patientEntityRepository.findAll().forEach(entity -> result.add(PatientEntity.toDomain(entity)));
+    jpaRepository.findAll().forEach(entity -> result.add(PatientEntityMapper.toDomain(entity)));
     return result;
   }
 
   @Override
   public List<Patient> getBySubscriptionId(UUID subscriptionId) {
     List<Patient> result = new ArrayList<>();
-    this.patientEntityRepository.findBySubscriptionId(subscriptionId)
-      .forEach(entity -> result.add(PatientEntity.toDomain(entity)));
+    jpaRepository.findBySubscriptionId(subscriptionId)
+        .forEach(entity -> result.add(PatientEntityMapper.toDomain(entity)));
     return result;
   }
 
   @Override
   public void update(Patient patient) {
-    PatientEntity entity = PatientEntity.fromDomain(patient);
-    this.patientEntityRepository.save(entity);
+    jpaRepository.save(PatientEntityMapper.toEntity(patient));
   }
 
   @Override
   public void remove(UUID id) {
-    this.patientEntityRepository.deleteById(id);
+    jpaRepository.deleteById(id);
   }
 
   @Override
   public boolean existsByEmail(String email) {
-    return this.patientEntityRepository.existsByEmail(new nur.edu.nurtricenter_patient.domain.patient.Email(email));
+    return jpaRepository.existsByEmail(new Email(email));
   }
 
   @Override
   public boolean existsByCellphone(String cellphone) {
-    return this.patientEntityRepository.existsByCellphone(new nur.edu.nurtricenter_patient.domain.patient.Cellphone(cellphone));
+    return jpaRepository.existsByCellphone(new Cellphone(cellphone));
   }
 
   @Override
   public boolean existsByDocument(String document) {
-    return this.patientEntityRepository.existsByDocument(document);
+    return jpaRepository.existsByDocument(document);
   }
 
   @Override
   public boolean existsByEmailAndNotId(String email, UUID id) {
-    return this.patientEntityRepository.existsByEmailAndIdNot(new nur.edu.nurtricenter_patient.domain.patient.Email(email), id);
+    return jpaRepository.existsByEmailAndIdNot(new Email(email), id);
   }
 
   @Override
   public boolean existsByCellphoneAndNotId(String cellphone, UUID id) {
-    return this.patientEntityRepository.existsByCellphoneAndIdNot(new nur.edu.nurtricenter_patient.domain.patient.Cellphone(cellphone), id);
+    return jpaRepository.existsByCellphoneAndIdNot(new Cellphone(cellphone), id);
   }
 
   @Override
   public boolean existsByDocumentAndNotId(String document, UUID id) {
-    return this.patientEntityRepository.existsByDocumentAndIdNot(document, id);
+    return jpaRepository.existsByDocumentAndIdNot(document, id);
   }
 }

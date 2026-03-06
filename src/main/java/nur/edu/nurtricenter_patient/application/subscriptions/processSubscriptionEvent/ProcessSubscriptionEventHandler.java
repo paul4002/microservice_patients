@@ -28,8 +28,6 @@ import nur.edu.nurtricenter_patient.core.results.Result;
 import nur.edu.nurtricenter_patient.domain.patient.IPatientRepository;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
 import nur.edu.nurtricenter_patient.domain.patient.SubscriptionStatus;
-import nur.edu.nurtricenter_patient.domain.patient.events.PatientSubscriptionRemovedEvent;
-import nur.edu.nurtricenter_patient.domain.patient.events.PatientSubscriptionUpdatedEvent;
 import nur.edu.nurtricenter_patient.infraestructure.inbound.InboundEventMetrics;
 import nur.edu.nurtricenter_patient.infraestructure.inbound.InboundEventRecorder;
 
@@ -130,24 +128,16 @@ public class ProcessSubscriptionEventHandler implements Command.Handler<ProcessS
 
     List<AggregateRoot> changed = new ArrayList<>();
     for (Patient patient : patients) {
-      boolean didChange = patient.syncSubscription(subscriptionId, status, endsOn);
+      boolean didChange = patient.syncSubscription(subscriptionId, status, endsOn, eventName);
       if (!didChange) {
         continue;
       }
       patientRepository.update(patient);
-      patient.addDomainEvent(new PatientSubscriptionUpdatedEvent(
-        patient.getId(),
-        subscriptionId,
-        status,
-        endsOn,
-        eventName
-      ));
-
       changed.add(patient);
     }
 
     if (!changed.isEmpty()) {
-      unitOfWork.commitAsync(changed.toArray(new AggregateRoot[0]));
+      unitOfWork.commit(changed.toArray(new AggregateRoot[0]));
     }
     return Result.success();
   }
@@ -166,26 +156,23 @@ public class ProcessSubscriptionEventHandler implements Command.Handler<ProcessS
     String reason = readString(payload, "motivoCancelacion", "reason", "motivo");
     List<AggregateRoot> changed = new ArrayList<>();
     for (Patient patient : patients) {
-      UUID previous = patient.getSubscriptionId();
-      if (!Objects.equals(previous, subscriptionId)) {
+      if (!Objects.equals(patient.getSubscriptionId(), subscriptionId)) {
         continue;
       }
-      boolean didChange = patient.removeSubscription(SubscriptionStatus.CANCELLED, null);
+      boolean didChange = patient.removeSubscription(
+          SubscriptionStatus.CANCELLED, null,
+          reason != null ? reason : "subscription-removed",
+          eventName
+      );
       if (!didChange) {
         continue;
       }
       patientRepository.update(patient);
-      patient.addDomainEvent(new PatientSubscriptionRemovedEvent(
-        patient.getId(),
-        previous,
-        reason != null ? reason : "subscription-removed",
-        eventName
-      ));
       changed.add(patient);
     }
 
     if (!changed.isEmpty()) {
-      unitOfWork.commitAsync(changed.toArray(new AggregateRoot[0]));
+      unitOfWork.commit(changed.toArray(new AggregateRoot[0]));
     }
     return Result.success();
   }
@@ -208,20 +195,13 @@ public class ProcessSubscriptionEventHandler implements Command.Handler<ProcessS
 
     LocalDate endsOn = readDate(payload, "fechaFin", "endDate", "expiresOn", "vencimiento");
     SubscriptionStatus status = resolveStatus(payload, endsOn);
-    boolean changed = patient.syncSubscription(contractId, status, endsOn);
+    boolean changed = patient.syncSubscription(contractId, status, endsOn, eventName);
     if (!changed) {
       return Result.success();
     }
 
     patientRepository.update(patient);
-    patient.addDomainEvent(new PatientSubscriptionUpdatedEvent(
-      patient.getId(),
-      contractId,
-      status,
-      endsOn,
-      eventName
-    ));
-    unitOfWork.commitAsync(patient);
+    unitOfWork.commit(patient);
     return Result.success();
   }
 

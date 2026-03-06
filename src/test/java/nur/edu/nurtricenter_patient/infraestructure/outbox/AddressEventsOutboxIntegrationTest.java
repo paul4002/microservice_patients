@@ -128,8 +128,7 @@ class AddressEventsOutboxIntegrationTest {
   }
 
   private Patient createPatient() {
-    return new Patient(
-      UUID.randomUUID(),
+    return Patient.create(
       "Ana",
       "Perez",
       LocalDate.of(1995, 1, 10),

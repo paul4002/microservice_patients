@@ -136,8 +136,7 @@ class ProcessSubscriptionEventIntegrationTest {
   }
 
   private Patient createPatient(UUID subscriptionId) {
-    return new Patient(
-      UUID.randomUUID(),
+    return Patient.create(
       "Ana",
       "Perez",
       LocalDate.of(1995, 1, 10),

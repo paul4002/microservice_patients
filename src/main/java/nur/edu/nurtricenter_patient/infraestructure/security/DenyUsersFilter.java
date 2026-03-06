@@ -14,12 +14,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@Component
 public class DenyUsersFilter extends OncePerRequestFilter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DenyUsersFilter.class);
@@ -34,10 +32,10 @@ public class DenyUsersFilter extends OncePerRequestFilter {
 
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    String path = request.getRequestURI();
+    String path = normalizePath(request.getRequestURI());
     return !path.startsWith("/api/")
-      || "/api/login".equals(path)
-      || "/api/refresh".equals(path)
+      || path.startsWith("/api/login")
+      || path.startsWith("/api/refresh")
       || path.startsWith("/actuator/");
   }
 
@@ -90,5 +88,18 @@ public class DenyUsersFilter extends OncePerRequestFilter {
     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     objectMapper.writeValue(response.getOutputStream(), Map.of("message", "Forbidden"));
+  }
+
+  private String normalizePath(String rawPath) {
+    if (rawPath == null || rawPath.isBlank()) {
+      return "/";
+    }
+
+    String normalized = rawPath.replaceAll("/+", "/");
+    if (normalized.length() > 1 && normalized.endsWith("/")) {
+      normalized = normalized.substring(0, normalized.length() - 1);
+    }
+
+    return normalized;
   }
 }

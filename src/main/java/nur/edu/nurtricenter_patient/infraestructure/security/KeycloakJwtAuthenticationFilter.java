@@ -13,12 +13,10 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@Component
 public class KeycloakJwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final KeycloakJwtValidator jwtValidator;
@@ -31,10 +29,10 @@ public class KeycloakJwtAuthenticationFilter extends OncePerRequestFilter {
 
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    String path = request.getRequestURI();
+    String path = normalizePath(request.getRequestURI());
     return !path.startsWith("/api/")
-      || "/api/login".equals(path)
-      || "/api/refresh".equals(path)
+      || path.startsWith("/api/login")
+      || path.startsWith("/api/refresh")
       || path.startsWith("/actuator/");
   }
 
@@ -103,5 +101,18 @@ public class KeycloakJwtAuthenticationFilter extends OncePerRequestFilter {
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     objectMapper.writeValue(response.getOutputStream(), Map.of("message", "Unauthorized"));
+  }
+
+  private String normalizePath(String rawPath) {
+    if (rawPath == null || rawPath.isBlank()) {
+      return "/";
+    }
+
+    String normalized = rawPath.replaceAll("/+", "/");
+    if (normalized.length() > 1 && normalized.endsWith("/")) {
+      normalized = normalized.substring(0, normalized.length() - 1);
+    }
+
+    return normalized;
   }
 }
