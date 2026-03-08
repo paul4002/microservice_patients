@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn test-compile -q)",
+      "Bash(./mvnw test-compile -q)",
+      "Bash(java -version)",
+      "Read(//usr/lib/**)",
+      "Read(//usr/local/lib/**)"
+    ]
+  }
+}

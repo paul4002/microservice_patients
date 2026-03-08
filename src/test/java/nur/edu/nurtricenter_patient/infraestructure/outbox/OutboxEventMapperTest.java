@@ -3,6 +3,7 @@ package nur.edu.nurtricenter_patient.infraestructure.outbox;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -15,6 +16,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import nur.edu.nurtricenter_patient.domain.patient.events.PatientCreatedEvent;
+import nur.edu.nurtricenter_patient.domain.patient.events.PatientDeletedEvent;
+import nur.edu.nurtricenter_patient.domain.patient.events.PatientUpdatedEvent;
 
 class OutboxEventMapperTest {
 
@@ -62,5 +65,55 @@ class OutboxEventMapperTest {
 
     assertNotNull(entity.getCorrelationId());
     assertDoesNotThrow(() -> UUID.fromString(entity.getCorrelationId().toString()));
+  }
+
+  @Test
+  void toEntity_shouldMapPatientUpdatedEvent() throws IOException {
+    UUID patientId = UUID.randomUUID();
+    UUID subscriptionId = UUID.randomUUID();
+    PatientUpdatedEvent event = new PatientUpdatedEvent(patientId, "Maria Lopez", "9876543", subscriptionId);
+    OutboxEventMapper mapper = new OutboxEventMapper(objectMapper);
+
+    OutboxEventEntity entity = mapper.toEntity(event);
+
+    assertEquals("paciente.paciente-actualizado", entity.getEventName());
+    assertEquals("paciente.paciente-actualizado", entity.getRoutingKey());
+    assertEquals(patientId.toString(), entity.getAggregateId());
+
+    JsonNode payload = objectMapper.readTree(entity.getPayload());
+    assertEquals(patientId.toString(), payload.get("pacienteId").asText());
+    assertEquals("Maria Lopez", payload.get("nombre").asText());
+    assertEquals("9876543", payload.get("documento").asText());
+    assertEquals(subscriptionId.toString(), payload.get("suscripcionId").asText());
+  }
+
+  @Test
+  void toEntity_shouldMapPatientDeletedEvent() throws IOException {
+    UUID patientId = UUID.randomUUID();
+    PatientDeletedEvent event = new PatientDeletedEvent(patientId);
+    OutboxEventMapper mapper = new OutboxEventMapper(objectMapper);
+
+    OutboxEventEntity entity = mapper.toEntity(event);
+
+    assertEquals("paciente.paciente-eliminado", entity.getEventName());
+    assertEquals("paciente.paciente-eliminado", entity.getRoutingKey());
+    assertEquals(patientId.toString(), entity.getAggregateId());
+
+    JsonNode payload = objectMapper.readTree(entity.getPayload());
+    assertEquals(1, payload.size());
+    assertEquals(patientId.toString(), payload.get("pacienteId").asText());
+  }
+
+  @Test
+  void toEntity_shouldMapPatientUpdatedEventWithNullSubscription() throws IOException {
+    UUID patientId = UUID.randomUUID();
+    PatientUpdatedEvent event = new PatientUpdatedEvent(patientId, "Carlos Rios", "1111111", null);
+    OutboxEventMapper mapper = new OutboxEventMapper(objectMapper);
+
+    OutboxEventEntity entity = mapper.toEntity(event);
+
+    JsonNode payload = objectMapper.readTree(entity.getPayload());
+    assertTrue(payload.has("suscripcionId"));
+    assertTrue(payload.get("suscripcionId").isNull());
   }
 }
