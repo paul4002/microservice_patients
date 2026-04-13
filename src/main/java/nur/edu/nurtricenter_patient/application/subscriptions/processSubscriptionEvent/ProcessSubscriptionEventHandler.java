@@ -18,8 +18,9 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import an.awesome.pipelinr.Command;
-import io.micrometer.core.instrument.Timer.Sample;
 import jakarta.transaction.Transactional;
+import nur.edu.nurtricenter_patient.application.abstractions.IInboundEventMetrics;
+import nur.edu.nurtricenter_patient.application.abstractions.IInboundEventRecorder;
 import nur.edu.nurtricenter_patient.core.abstractions.AggregateRoot;
 import nur.edu.nurtricenter_patient.core.abstractions.IUnitOfWork;
 import nur.edu.nurtricenter_patient.core.results.Error;
@@ -28,23 +29,21 @@ import nur.edu.nurtricenter_patient.core.results.Result;
 import nur.edu.nurtricenter_patient.domain.patient.IPatientRepository;
 import nur.edu.nurtricenter_patient.domain.patient.Patient;
 import nur.edu.nurtricenter_patient.domain.patient.SubscriptionStatus;
-import nur.edu.nurtricenter_patient.infraestructure.inbound.InboundEventMetrics;
-import nur.edu.nurtricenter_patient.infraestructure.inbound.InboundEventRecorder;
 
 @Component
 public class ProcessSubscriptionEventHandler implements Command.Handler<ProcessSubscriptionEventCommand, Result> {
   private static final Logger log = LoggerFactory.getLogger(ProcessSubscriptionEventHandler.class);
   private final IPatientRepository patientRepository;
   private final IUnitOfWork unitOfWork;
-  private final InboundEventRecorder inboundEventRecorder;
-  private final InboundEventMetrics metrics;
+  private final IInboundEventRecorder inboundEventRecorder;
+  private final IInboundEventMetrics metrics;
   private final Clock clock;
 
   public ProcessSubscriptionEventHandler(
     IPatientRepository patientRepository,
     IUnitOfWork unitOfWork,
-    InboundEventRecorder inboundEventRecorder,
-    InboundEventMetrics metrics
+    IInboundEventRecorder inboundEventRecorder,
+    IInboundEventMetrics metrics
   ) {
     this.patientRepository = patientRepository;
     this.unitOfWork = unitOfWork;
@@ -84,14 +83,13 @@ public class ProcessSubscriptionEventHandler implements Command.Handler<ProcessS
         return Result.success();
       }
 
-      Sample latencySample = metrics.startHandlerLatency();
-      Result result = switch (eventName) {
-        case "suscripciones.suscripcion-actualizada" -> applySubscriptionUpdate(eventName, request.payload());
-        case "contrato.creado" -> applyContractCreated(eventName, request.payload());
-        case "suscripciones.suscripcion-eliminada", "contrato.cancelado", "contrato.cancelar" -> applySubscriptionRemoval(eventName, request.payload());
+      String dispatchName = eventName;
+      Result result = metrics.timeHandler(eventName, () -> switch (dispatchName) {
+        case "suscripciones.suscripcion-actualizada" -> applySubscriptionUpdate(dispatchName, request.payload());
+        case "contrato.creado" -> applyContractCreated(dispatchName, request.payload());
+        case "suscripciones.suscripcion-eliminada", "contrato.cancelado", "contrato.cancelar" -> applySubscriptionRemoval(dispatchName, request.payload());
         default -> Result.success();
-      };
-      metrics.stopHandlerLatency(latencySample, eventName);
+      });
       if (result.isSuccess()) {
         inboundEventRecorder.markProcessed(request.eventId());
         metrics.incrementProcessed(eventName);
@@ -127,17 +125,28 @@ public class ProcessSubscriptionEventHandler implements Command.Handler<ProcessS
     SubscriptionStatus status = resolveStatus(payload, endsOn);
 
     List<AggregateRoot> changed = new ArrayList<>();
+    int failed = 0;
     for (Patient patient : patients) {
-      boolean didChange = patient.syncSubscription(subscriptionId, status, endsOn, eventName);
-      if (!didChange) {
-        continue;
+      try {
+        boolean didChange = patient.syncSubscription(subscriptionId, status, endsOn, eventName);
+        if (!didChange) {
+          continue;
+        }
+        patientRepository.update(patient);
+        changed.add(patient);
+      } catch (RuntimeException ex) {
+        failed++;
+        log.error("Failed to apply subscription update to patient {} (event {}): {}",
+            patient.getId(), eventName, ex.getClass().getSimpleName());
       }
-      patientRepository.update(patient);
-      changed.add(patient);
     }
 
     if (!changed.isEmpty()) {
       unitOfWork.commit(changed.toArray(new AggregateRoot[0]));
+    }
+    if (failed > 0 && changed.isEmpty()) {
+      return Result.failure(new Error("SubscriptionEvent.AllPatientsFailed",
+          "All " + failed + " patients failed to apply update", ErrorType.FAILURE));
     }
     return Result.success();
   }
@@ -155,24 +164,35 @@ public class ProcessSubscriptionEventHandler implements Command.Handler<ProcessS
 
     String reason = readString(payload, "motivoCancelacion", "reason", "motivo");
     List<AggregateRoot> changed = new ArrayList<>();
+    int failed = 0;
     for (Patient patient : patients) {
       if (!Objects.equals(patient.getSubscriptionId(), subscriptionId)) {
         continue;
       }
-      boolean didChange = patient.removeSubscription(
-          SubscriptionStatus.CANCELLED, null,
-          reason != null ? reason : "subscription-removed",
-          eventName
-      );
-      if (!didChange) {
-        continue;
+      try {
+        boolean didChange = patient.removeSubscription(
+            SubscriptionStatus.CANCELLED, null,
+            reason != null ? reason : "subscription-removed",
+            eventName
+        );
+        if (!didChange) {
+          continue;
+        }
+        patientRepository.update(patient);
+        changed.add(patient);
+      } catch (RuntimeException ex) {
+        failed++;
+        log.error("Failed to apply subscription removal to patient {} (event {}): {}",
+            patient.getId(), eventName, ex.getClass().getSimpleName());
       }
-      patientRepository.update(patient);
-      changed.add(patient);
     }
 
     if (!changed.isEmpty()) {
       unitOfWork.commit(changed.toArray(new AggregateRoot[0]));
+    }
+    if (failed > 0 && changed.isEmpty()) {
+      return Result.failure(new Error("SubscriptionEvent.AllPatientsFailed",
+          "All " + failed + " patients failed to apply removal", ErrorType.FAILURE));
     }
     return Result.success();
   }

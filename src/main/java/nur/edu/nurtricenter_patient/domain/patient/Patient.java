@@ -36,9 +36,6 @@ public class Patient extends AggregateRoot {
   private final List<Address> addresses = new ArrayList<>();
   private final Clock clock;
 
-  // ──────────────────────────────────────────────
-  // Factory method — crea un paciente NUEVO y emite el evento de dominio
-  // ──────────────────────────────────────────────
   public static Patient create(String name, String lastname, LocalDate birthDate,
       Email email, Cellphone cellphone, String document, UUID subscriptionId) {
     return create(name, lastname, birthDate, email, cellphone, document, subscriptionId, Clock.systemUTC());
@@ -57,9 +54,6 @@ public class Patient extends AggregateRoot {
     return patient;
   }
 
-  // ──────────────────────────────────────────────
-  // Constructor de reconstitución desde BD — NO emite eventos
-  // ──────────────────────────────────────────────
   public Patient(UUID id, String name, String lastname, LocalDate birthDate,
       Email email, Cellphone cellphone, String document, UUID subscriptionId,
       SubscriptionStatus subscriptionStatus, LocalDate subscriptionEndsOn) {
@@ -84,13 +78,19 @@ public class Patient extends AggregateRoot {
     this.subscriptionEndsOn = null;
   }
 
-  // ──────────────────────────────────────────────
-  // Comportamiento de dominio
-  // ──────────────────────────────────────────────
-
-  public void update(String name, String lastname, LocalDate birthDate,
+  public boolean update(String name, String lastname, LocalDate birthDate,
       Email email, Cellphone cellphone, String document, UUID subscriptionId) {
     validate(name, lastname, birthDate, document, clock);
+    boolean changed = !Objects.equals(this.name, name)
+        || !Objects.equals(this.lastname, lastname)
+        || !Objects.equals(this.birthDate, birthDate)
+        || !Objects.equals(this.email, email)
+        || !Objects.equals(this.cellphone, cellphone)
+        || !Objects.equals(this.document, document)
+        || !Objects.equals(this.subscriptionId, subscriptionId);
+    if (!changed) {
+      return false;
+    }
     this.name = name;
     this.lastname = lastname;
     this.birthDate = birthDate;
@@ -98,14 +98,13 @@ public class Patient extends AggregateRoot {
     this.cellphone = cellphone;
     this.document = document;
     this.subscriptionId = subscriptionId;
-    // La suscripción (status y endsOn) NO se resetea: se gestiona exclusivamente
-    // vía syncSubscription / removeSubscription desde los eventos de integración.
     addDomainEvent(new PatientUpdatedEvent(
         getId(),
         getName() + " " + getLastname(),
         getDocument(),
         getSubscriptionId()
     ));
+    return true;
   }
 
   public void markAsDeleted() {
@@ -123,7 +122,6 @@ public class Patient extends AggregateRoot {
     return address.getId();
   }
 
-  /** Solo para reconstitución desde repositorio — no emite evento */
   public void restoreAddress(Address address) {
     if (address != null) {
       this.addresses.add(address);
@@ -163,12 +161,6 @@ public class Patient extends AggregateRoot {
     ));
   }
 
-  /**
-   * Sincroniza el estado de suscripción desde un evento externo.
-   * Emite PatientSubscriptionUpdatedEvent solo si hubo cambios reales.
-   *
-   * @param sourceEvent routing key del evento de integración (para trazabilidad)
-   */
   public boolean syncSubscription(UUID subscriptionId, SubscriptionStatus status,
       LocalDate endsOn, String sourceEvent) {
     SubscriptionStatus nextStatus = status != null ? status : defaultStatus(subscriptionId);
@@ -186,12 +178,6 @@ public class Patient extends AggregateRoot {
     return changed;
   }
 
-  /**
-   * Elimina la suscripción activa del paciente.
-   * Emite PatientSubscriptionRemovedEvent solo si hubo cambios reales.
-   *
-   * @param sourceEvent routing key del evento de integración (para trazabilidad)
-   */
   public boolean removeSubscription(SubscriptionStatus finalStatus, LocalDate endsOn,
       String reason, String sourceEvent) {
     SubscriptionStatus nextStatus = finalStatus != null ? finalStatus : SubscriptionStatus.CANCELLED;
@@ -210,10 +196,6 @@ public class Patient extends AggregateRoot {
     return changed;
   }
 
-  // ──────────────────────────────────────────────
-  // Getters
-  // ──────────────────────────────────────────────
-
   public String getName() { return name; }
   public String getLastname() { return lastname; }
   public LocalDate getBirthDate() { return birthDate; }
@@ -224,10 +206,6 @@ public class Patient extends AggregateRoot {
   public SubscriptionStatus getSubscriptionStatus() { return subscriptionStatus; }
   public LocalDate getSubscriptionEndsOn() { return subscriptionEndsOn; }
   public List<Address> getAddresses() { return Collections.unmodifiableList(addresses); }
-
-  // ──────────────────────────────────────────────
-  // Privado
-  // ──────────────────────────────────────────────
 
   private Address getAddressById(UUID addressId) {
     for (Address address : this.addresses) {

@@ -125,16 +125,22 @@ public class SubscriptionInboundListener {
         );
       }
     } catch (AmqpRejectAndDontRequeueException ex) {
-      auditLog.warn("Rabbit inbound rejected: reason={}", ex.getMessage());
+      auditLog.warn("Rabbit inbound rejected: reason={}", safeReason(ex));
       throw ex;
     } catch (IllegalStateException ex) {
-      auditLog.error("Rabbit inbound processing error: reason={}", ex.getMessage());
+      auditLog.error("Rabbit inbound processing error: reason={}", safeReason(ex));
       throw ex;
     } catch (Exception ex) {
-      log.error("Inbound subscription message parse failure", ex);
-      auditLog.error("Rabbit inbound parse failure: reason={}", ex.getMessage());
-      throw new AmqpRejectAndDontRequeueException("Inbound message rejected", ex);
+      log.error("Inbound subscription message parse failure: type={}", ex.getClass().getSimpleName());
+      auditLog.error("Rabbit inbound parse failure: type={}", ex.getClass().getSimpleName());
+      throw new AmqpRejectAndDontRequeueException("Inbound message rejected");
     }
+  }
+
+  private String safeReason(Throwable ex) {
+    String msg = ex.getMessage();
+    if (msg == null) return ex.getClass().getSimpleName();
+    return msg.length() > 200 ? msg.substring(0, 200) : msg;
   }
 
   private MDC.MDCCloseable putMdc(String key, String value) {

@@ -8,27 +8,38 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import nur.edu.nurtricenter_patient.application.auth.IdentityProviderUnavailableException;
+import nur.edu.nurtricenter_patient.application.auth.ITokenService;
+import nur.edu.nurtricenter_patient.application.auth.TokenResponse;
+
 @Service
-public class KeycloakTokenService {
+public class KeycloakTokenService implements ITokenService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(KeycloakTokenService.class);
+
+  private static final int CB_FAILURE_THRESHOLD = 5;
+  private static final Duration CB_COOLDOWN = Duration.ofSeconds(30);
 
   private final KeycloakProperties properties;
   private final ObjectMapper objectMapper;
   private final HttpClient httpClient;
+  private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
+  private final AtomicReference<Instant> openUntil = new AtomicReference<>(Instant.EPOCH);
 
   public KeycloakTokenService(KeycloakProperties properties, ObjectMapper objectMapper) {
     this.properties = properties;
@@ -38,7 +49,8 @@ public class KeycloakTokenService {
       .build();
   }
 
-  public ResponseEntity<Map<String, Object>> login(String username, String password) {
+  @Override
+  public TokenResponse login(String username, String password) {
     Map<String, String> payload = new LinkedHashMap<>();
     payload.put("grant_type", "password");
     payload.put("client_id", properties.getClientId());
@@ -49,7 +61,8 @@ public class KeycloakTokenService {
     return executeTokenRequest(payload, "login", username);
   }
 
-  public ResponseEntity<Map<String, Object>> refresh(String refreshToken) {
+  @Override
+  public TokenResponse refresh(String refreshToken) {
     Map<String, String> payload = new LinkedHashMap<>();
     payload.put("grant_type", "refresh_token");
     payload.put("client_id", properties.getClientId());
@@ -59,11 +72,13 @@ public class KeycloakTokenService {
     return executeTokenRequest(payload, "refresh", null);
   }
 
-  private ResponseEntity<Map<String, Object>> executeTokenRequest(
+  private TokenResponse executeTokenRequest(
     Map<String, String> payload,
     String operation,
     String username
   ) {
+    checkCircuitBreaker();
+
     String tokenUrl = tokenEndpoint();
 
     HttpRequest request = HttpRequest.newBuilder()
@@ -77,18 +92,42 @@ public class KeycloakTokenService {
     try {
       response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (IOException e) {
+      recordFailure();
       LOGGER.error("{} en Keycloak no disponible", operation, e);
-      throw new KeycloakUnavailableException("Unable to reach identity provider", e);
+      throw new IdentityProviderUnavailableException("Unable to reach identity provider", e);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      recordFailure();
       LOGGER.error("{} en Keycloak interrumpido", operation, e);
-      throw new KeycloakUnavailableException("Identity provider request interrupted", e);
+      throw new IdentityProviderUnavailableException("Identity provider request interrupted", e);
     }
 
+    recordSuccess();
     Map<String, Object> body = parseBody(response.body());
     logResult(operation, username, response.statusCode(), body);
 
-    return ResponseEntity.status(response.statusCode()).body(body);
+    return new TokenResponse(response.statusCode(), body);
+  }
+
+  private void checkCircuitBreaker() {
+    Instant until = openUntil.get();
+    if (until.isAfter(Instant.now())) {
+      throw new IdentityProviderUnavailableException("Identity provider circuit breaker is open");
+    }
+  }
+
+  private void recordFailure() {
+    int failures = consecutiveFailures.incrementAndGet();
+    if (failures >= CB_FAILURE_THRESHOLD) {
+      openUntil.set(Instant.now().plus(CB_COOLDOWN));
+      LOGGER.warn("Keycloak circuit breaker opened for {} after {} consecutive failures",
+          CB_COOLDOWN, failures);
+    }
+  }
+
+  private void recordSuccess() {
+    consecutiveFailures.set(0);
+    openUntil.set(Instant.EPOCH);
   }
 
   private void putClientSecret(Map<String, String> payload) {

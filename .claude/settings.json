@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls:*)",
+      "Bash(find /home/eduard/github/microservice_patients/src/test/java -name \"UpdatePatientHandlerTest.java\" -exec grep -l \"patient.update\\\\|update\\(\" {} \\\\;)",
+      "Bash(./mvnw -q -DskipTests compile)",
+      "Read(//home/eduard/.sdkman/candidates/**)",
+      "Read(//opt/**)",
+      "Bash(ls -la /home/eduard/github/microservice_patients/.env*)",
+      "Bash(git rm:*)"
+    ]
+  }
+}

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.BatchSize;
+
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.CascadeType;
@@ -42,7 +44,8 @@ public class PatientEntity {
   @jakarta.persistence.Column(name = "subscription_ends_on")
   private LocalDate subscriptionEndsOn;
 
-  @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+  @BatchSize(size = 50)
   private List<AddressEntity> addresses = new ArrayList<>();
 
   public UUID getId() {

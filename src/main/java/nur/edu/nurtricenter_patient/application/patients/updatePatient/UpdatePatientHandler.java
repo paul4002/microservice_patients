@@ -38,8 +38,9 @@ public class UpdatePatientHandler implements Command.Handler<UpdatePatientComman
     if (patientRepository.existsByDocumentAndNotId(request.document(), request.id())) {
       return Result.failure(PatientErrors.DocumentAlreadyExists(request.document()));
     }
+    boolean changed;
     try {
-      patient.update(
+      changed = patient.update(
         request.name(),
         request.lastname(),
         request.birthDate(),
@@ -50,6 +51,9 @@ public class UpdatePatientHandler implements Command.Handler<UpdatePatientComman
       );
     } catch (DomainException e) {
       return Result.failure(e.getError());
+    }
+    if (!changed) {
+      return Result.success();
     }
     patientRepository.update(patient);
     unitOfWork.commit(patient);

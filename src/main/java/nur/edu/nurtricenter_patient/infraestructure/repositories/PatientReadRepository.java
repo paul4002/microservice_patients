@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import nur.edu.nurtricenter_patient.application.patients.IPatientReadRepository;
 import nur.edu.nurtricenter_patient.application.patients.dto.AddressDto;
@@ -18,6 +19,7 @@ import nur.edu.nurtricenter_patient.infraestructure.domainModel.PatientEntity;
  * Mapea directamente desde JPA a DTOs, sin pasar por el aggregate de dominio.
  */
 @Repository
+@Transactional(readOnly = true)
 public class PatientReadRepository implements IPatientReadRepository {
 
   private final PatientEntityRepository jpaRepository;

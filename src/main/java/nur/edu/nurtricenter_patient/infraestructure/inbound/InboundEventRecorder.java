@@ -7,14 +7,18 @@ import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import nur.edu.nurtricenter_patient.application.abstractions.IInboundEventRecorder;
+
 @Component
-public class InboundEventRecorder {
+public class InboundEventRecorder implements IInboundEventRecorder {
+  private static final int MAX_ERROR_LENGTH = 2000;
   private final InboundEventRepository repository;
 
   public InboundEventRecorder(InboundEventRepository repository) {
     this.repository = repository;
   }
 
+  @Override
   public boolean tryStart(
     UUID eventId,
     String eventName,
@@ -53,12 +57,21 @@ public class InboundEventRecorder {
     }
   }
 
+  @Override
   public void markProcessed(UUID eventId) {
     update(eventId, "PROCESSED", null);
   }
 
+  @Override
   public void markFailed(UUID eventId, String error) {
-    update(eventId, "FAILED", error);
+    update(eventId, "FAILED", truncate(error));
+  }
+
+  private static String truncate(String value) {
+    if (value == null) {
+      return null;
+    }
+    return value.length() > MAX_ERROR_LENGTH ? value.substring(0, MAX_ERROR_LENGTH) : value;
   }
 
   private void update(UUID eventId, String status, String error) {

@@ -21,7 +21,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ public class OutboxPublisher {
   private final RabbitAdmin rabbitAdmin;
   private final OutboxPublisherProperties props;
   private final ObjectMapper objectMapper;
+  private final TransactionTemplate transactionTemplate;
   private final Set<String> declaredEventQueues = ConcurrentHashMap.newKeySet();
 
   public OutboxPublisher(
@@ -46,13 +48,15 @@ public class OutboxPublisher {
     RabbitTemplate rabbitTemplate,
     RabbitAdmin rabbitAdmin,
     OutboxPublisherProperties props,
-    ObjectMapper objectMapper
+    ObjectMapper objectMapper,
+    PlatformTransactionManager transactionManager
   ) {
     this.repository = repository;
     this.rabbitTemplate = rabbitTemplate;
     this.rabbitAdmin = rabbitAdmin;
     this.props = props;
     this.objectMapper = objectMapper;
+    this.transactionTemplate = new TransactionTemplate(transactionManager);
     if (props.getExchange() != null && !props.getExchange().isBlank() && !FORCED_EXCHANGE.equals(props.getExchange())) {
       log.warn("Ignoring rabbitmq.exchange={} and forcing exchange={}", props.getExchange(), FORCED_EXCHANGE);
     }
@@ -72,25 +76,39 @@ public class OutboxPublisher {
     }
   }
 
-  @Transactional
   protected void publishSingle(OutboxEventEntity event) {
+    String routingKey = resolveRoutingKey(event);
+    String envelope;
     try {
-      String routingKey = resolveRoutingKey(event);
-      String envelope = buildEnvelope(event);
-      ensureEventQueueBinding(routingKey);
-      auditLog.info(
-        "Rabbit outbound sending: event={} eventId={} correlationId={} routingKey={} exchange={} attempt={}",
-        event.getEventName(),
-        event.getEventId(),
-        event.getCorrelationId(),
-        routingKey,
-        FORCED_EXCHANGE,
-        event.getAttempts() != null ? event.getAttempts() + 1 : 1
-      );
+      envelope = buildEnvelope(event);
+    } catch (RuntimeException ex) {
+      recordFailure(event, ex);
+      return;
+    }
+    ensureEventQueueBinding(routingKey);
+    auditLog.info(
+      "Rabbit outbound sending: event={} eventId={} correlationId={} routingKey={} exchange={} attempt={}",
+      event.getEventName(),
+      event.getEventId(),
+      event.getCorrelationId(),
+      routingKey,
+      FORCED_EXCHANGE,
+      event.getAttempts() != null ? event.getAttempts() + 1 : 1
+    );
+
+    try {
       rabbitTemplate.convertAndSend(FORCED_EXCHANGE, routingKey, envelope);
-      event.setProcessedOn(LocalDateTime.now());
-      event.setLastError(null);
-      repository.save(event);
+    } catch (RuntimeException ex) {
+      recordFailure(event, ex);
+      return;
+    }
+
+    try {
+      transactionTemplate.executeWithoutResult(status -> {
+        event.setProcessedOn(LocalDateTime.now());
+        event.setLastError(null);
+        repository.save(event);
+      });
       log.info("Outbox published: event={} eventId={} routingKey={} exchange={}",
         event.getEventName(),
         event.getEventId(),
@@ -105,31 +123,43 @@ public class OutboxPublisher {
         routingKey,
         FORCED_EXCHANGE
       );
-    } catch (Exception ex) {
-      int attempts = event.getAttempts() != null ? event.getAttempts() + 1 : 1;
-      event.setAttempts(attempts);
-      event.setLastError(ex.getMessage());
-      long baseBackoffMs = props.getPublishBackoffMs();
-      int cap = props.getPublishRetries() > 0 ? props.getPublishRetries() : 10;
-      long delayMs = baseBackoffMs * Math.min(attempts, cap);
-      event.setNextAttemptAt(LocalDateTime.now().plusNanos(delayMs * 1_000_000));
-      repository.save(event);
-      log.error("Outbox publish failed: event={} eventId={} attempts={} error={}",
-        event.getEventName(),
-        event.getEventId(),
-        attempts,
-        ex.getMessage()
-      );
-      auditLog.error(
-        "Rabbit outbound failed: event={} eventId={} correlationId={} attempts={} nextAttemptAt={} error={}",
-        event.getEventName(),
-        event.getEventId(),
-        event.getCorrelationId(),
-        attempts,
-        event.getNextAttemptAt(),
-        ex.getMessage()
-      );
+    } catch (RuntimeException ex) {
+      log.error("Outbox mark-processed failed (message already sent to Rabbit): event={} eventId={} error={}",
+        event.getEventName(), event.getEventId(), ex.getClass().getSimpleName());
     }
+  }
+
+  private void recordFailure(OutboxEventEntity event, Exception ex) {
+    int attempts = event.getAttempts() != null ? event.getAttempts() + 1 : 1;
+    long baseBackoffMs = props.getPublishBackoffMs();
+    int cap = props.getPublishRetries() > 0 ? props.getPublishRetries() : 10;
+    long delayMs = baseBackoffMs * Math.min(attempts, cap);
+    try {
+      transactionTemplate.executeWithoutResult(status -> {
+        event.setAttempts(attempts);
+        event.setLastError(ex.getMessage());
+        event.setNextAttemptAt(LocalDateTime.now().plusNanos(delayMs * 1_000_000));
+        repository.save(event);
+      });
+    } catch (RuntimeException dbEx) {
+      log.error("Outbox failure-state persistence failed: event={} eventId={} error={}",
+        event.getEventName(), event.getEventId(), dbEx.getClass().getSimpleName());
+    }
+    log.error("Outbox publish failed: event={} eventId={} attempts={} error={}",
+      event.getEventName(),
+      event.getEventId(),
+      attempts,
+      ex.getMessage()
+    );
+    auditLog.error(
+      "Rabbit outbound failed: event={} eventId={} correlationId={} attempts={} nextAttemptAt={} error={}",
+      event.getEventName(),
+      event.getEventId(),
+      event.getCorrelationId(),
+      attempts,
+      event.getNextAttemptAt(),
+      ex.getClass().getSimpleName()
+    );
   }
 
   private void ensureEventQueueBinding(String queueName) {
