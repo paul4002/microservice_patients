@@ -33,7 +33,7 @@ jobs:
           cache: maven
 
       - name: Verify (compile + test)
-        run: ./mvnw -B -ntp verify
+        run: bash mvnw -B -ntp verify
 
       - name: Verify packaged JAR exists
         run: test -s target/*.jar
