@@ -4,9 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +36,7 @@ class OutboxPublisherTest {
     OutboxPublisherProperties props = new OutboxPublisherProperties();
     props.setExchange("outbox.events");
 
-    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper);
+    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper, stubTransactionManager());
 
     UUID patientId = UUID.randomUUID();
     UUID eventId = UUID.randomUUID();
@@ -79,7 +83,7 @@ class OutboxPublisherTest {
     OutboxPublisherProperties props = new OutboxPublisherProperties();
     props.setExchange("outbox.events");
 
-    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper);
+    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper, stubTransactionManager());
 
     UUID patientId = UUID.randomUUID();
     UUID subscriptionId = UUID.randomUUID();
@@ -114,7 +118,7 @@ class OutboxPublisherTest {
     OutboxPublisherProperties props = new OutboxPublisherProperties();
     props.setExchange("outbox.events");
 
-    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper);
+    OutboxPublisher publisher = new OutboxPublisher(repository, rabbitTemplate, rabbitAdmin, props, objectMapper, stubTransactionManager());
 
     UUID patientId = UUID.randomUUID();
     OutboxEventEntity event = buildOutboxEvent(
@@ -137,6 +141,12 @@ class OutboxPublisherTest {
     JsonNode payload = envelope.get("payload");
     assertEquals(1, payload.size());
     assertEquals(patientId.toString(), payload.get("pacienteId").asText());
+  }
+
+  private PlatformTransactionManager stubTransactionManager() {
+    PlatformTransactionManager txManager = mock(PlatformTransactionManager.class);
+    when(txManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+    return txManager;
   }
 
   private OutboxEventEntity buildOutboxEvent(
