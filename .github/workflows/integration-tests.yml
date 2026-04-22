@@ -34,6 +34,12 @@ jobs:
       CONSUL_ENABLED: "false"
       TRACING_ENABLED: "false"
       SERVER_PORT: "8080"
+      # Rabbit and Keycloak are not reachable in CI; disable their health checks
+      # so /actuator/health returns UP once the DB is connected.
+      MANAGEMENT_HEALTH_RABBIT_ENABLED: "false"
+      MANAGEMENT_HEALTH_PING_ENABLED: "true"
+      SPRING_RABBITMQ_LISTENER_SIMPLE_AUTO_STARTUP: "false"
+      SPRING_RABBITMQ_LISTENER_DIRECT_AUTO_STARTUP: "false"
 
     steps:
       - uses: actions/checkout@v4
