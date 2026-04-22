@@ -44,28 +44,28 @@ public class PatientController {
   }
 
   @PostMapping
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist')")
   public ResponseEntity<ResultWithValue<UUID>> createPatient(@Valid @RequestBody CreatePatientCommand command) {
     ResultWithValue<UUID> result = command.execute(pipeline);
     return toResponse(result, HttpStatus.CREATED);
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist','patient')")
   public ResponseEntity<ResultWithValue<PatientDto>> getPatient(@PathVariable UUID id) {
     ResultWithValue<PatientDto> result = new GetPatientQuery(id).execute(pipeline);
     return toResponse(result, HttpStatus.OK);
   }
 
   @GetMapping
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist')")
   public ResponseEntity<ResultWithValue<List<PatientDto>>> listPatients() {
     ResultWithValue<List<PatientDto>> result = new ListPatientsQuery().execute(pipeline);
     return toResponse(result, HttpStatus.OK);
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist')")
   public ResponseEntity<Result> updatePatient(@PathVariable UUID id, @Valid @RequestBody UpdatePatientCommand command) {
     Result result = new UpdatePatientCommand(
       id,
@@ -81,14 +81,14 @@ public class PatientController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasRole('admin')")
   public ResponseEntity<Result> deletePatient(@PathVariable UUID id) {
     Result result = new DeletePatientCommand(id).execute(pipeline);
     return toResponse(result, HttpStatus.NO_CONTENT);
   }
 
   @PostMapping({"/{id}/address", "/{id}/addresses"})
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist')")
   public ResponseEntity<ResultWithValue<UUID>> addAddress(@PathVariable UUID id, @Valid @RequestBody AddAddressCommand command) {
     ResultWithValue<UUID> result = new AddAddressCommand(
       id,
@@ -105,7 +105,7 @@ public class PatientController {
   }
 
   @PutMapping({"/{id}/address/{addressId}", "/{id}/addresses/{addressId}"})
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist')")
   public ResponseEntity<Result> updateAddress(@PathVariable UUID id, @PathVariable UUID addressId, @Valid @RequestBody UpdateAddressCommand command) {
     Result result = new UpdateAddressCommand(
       id,
@@ -123,7 +123,7 @@ public class PatientController {
   }
 
   @PutMapping({"/{id}/address/{addressId}/geo", "/{id}/addresses/{addressId}/geo"})
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist')")
   public ResponseEntity<Result> geocodeAddress(@PathVariable UUID id, @PathVariable UUID addressId, @Valid @RequestBody GeocodeAddressCommand command) {
     Result result = new GeocodeAddressCommand(
       id,
@@ -135,14 +135,14 @@ public class PatientController {
   }
 
   @DeleteMapping({"/{id}/address/{addressId}", "/{id}/addresses/{addressId}"})
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist')")
   public ResponseEntity<Result> deactivateAddress(@PathVariable UUID id, @PathVariable UUID addressId) {
     Result result = new DeactivateAddressCommand(id, addressId).execute(pipeline);
     return toResponse(result, HttpStatus.NO_CONTENT);
   }
 
   @GetMapping({"/{id}/address", "/{id}/addresses"})
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
+  @PreAuthorize("hasAnyRole('admin','nutritionist','patient')")
   public ResponseEntity<ResultWithValue<List<AddressDto>>> getAddresses(@PathVariable UUID id) {
     ResultWithValue<List<AddressDto>> result = new GetAddressesQuery(id).execute(pipeline);
     return toResponse(result, HttpStatus.OK);

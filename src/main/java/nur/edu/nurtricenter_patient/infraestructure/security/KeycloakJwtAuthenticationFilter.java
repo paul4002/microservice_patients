@@ -73,7 +73,8 @@ public class KeycloakJwtAuthenticationFilter extends OncePerRequestFilter {
 
     List<SimpleGrantedAuthority> authorities = jwtValidator.extractRoles(claims)
       .stream()
-      .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+      .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toLowerCase(java.util.Locale.ROOT)))
+      .distinct()
       .toList();
 
     String principal = claimAsString(claims, "sub");
