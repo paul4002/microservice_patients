@@ -1,0 +1,310 @@
+{
+  "info": {
+    "name": "NurTriCenter - Patients Integration",
+    "description": "Integration tests para microservice_patients. Ejecuta el ciclo completo: health, auth, CRUD de pacientes y direcciones.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "a1f8e0c4-20a5-4a3d-9cbb-6b9f20d13dce"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "keycloakUrl", "value": "http://154.38.180.80:8080" },
+    { "key": "keycloakRealm", "value": "group3realm" },
+    { "key": "keycloakClient", "value": "admin-cli" },
+    { "key": "adminUser", "value": "admin" },
+    { "key": "adminPassword", "value": "admin" },
+    { "key": "accessToken", "value": "" },
+    { "key": "patientId", "value": "" },
+    { "key": "addressId", "value": "" },
+    { "key": "runDocument", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health — actuator/health",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('status UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth — obtener token (Keycloak)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "password" },
+            { "key": "client_id", "value": "{{keycloakClient}}" },
+            { "key": "username", "value": "{{adminUser}}" },
+            { "key": "password", "value": "{{adminPassword}}" }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakUrl}}/realms/{{keycloakRealm}}/protocol/openid-connect/token",
+          "host": ["{{keycloakUrl}}"],
+          "path": ["realms", "{{keycloakRealm}}", "protocol", "openid-connect", "token"]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('runDocument', 'DOC-' + Date.now());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('access_token presente', () => pm.expect(body.access_token).to.be.a('string').and.not.empty);",
+              "pm.collectionVariables.set('accessToken', body.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients — crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Integration\",\n  \"lastname\": \"Test\",\n  \"birthDate\": \"01-01-1990\",\n  \"email\": \"integration-{{runDocument}}@example.com\",\n  \"cellphone\": \"+59170000000\",\n  \"document\": \"{{runDocument}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/patient",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('value es UUID', () => pm.expect(body.value).to.match(/^[0-9a-f-]{36}$/i));",
+              "pm.collectionVariables.set('patientId', body.value);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients — obtener por id",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/patient/{{patientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient", "{{patientId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const p = pm.response.json().value;",
+              "pm.test('nombre match', () => pm.expect(p.name).to.eql('Integration'));",
+              "pm.test('document match', () => pm.expect(p.document).to.eql(pm.collectionVariables.get('runDocument')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients — listar",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/patient",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const list = pm.response.json().value;",
+              "pm.test('es array', () => pm.expect(list).to.be.an('array'));",
+              "pm.test('contiene el paciente creado', () => {",
+              "  const id = pm.collectionVariables.get('patientId');",
+              "  pm.expect(list.some(p => p.id === id)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients — actualizar",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"IntegrationUpdated\",\n  \"lastname\": \"Test\",\n  \"birthDate\": \"01-01-1990\",\n  \"email\": \"integration-{{runDocument}}@example.com\",\n  \"cellphone\": \"+59170000001\",\n  \"document\": \"{{runDocument}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/patient/{{patientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient", "{{patientId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Addresses — crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"label\": \"home\",\n  \"line1\": \"Av. Siempre Viva 123\",\n  \"line2\": \"Dpto 4\",\n  \"country\": \"Bolivia\",\n  \"province\": \"Santa Cruz\",\n  \"city\": \"Santa Cruz de la Sierra\",\n  \"latitude\": -17.78,\n  \"longitude\": -63.18\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/patient/{{patientId}}/address",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient", "{{patientId}}", "address"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "const id = pm.response.json().value;",
+              "pm.test('addressId es UUID', () => pm.expect(id).to.match(/^[0-9a-f-]{36}$/i));",
+              "pm.collectionVariables.set('addressId', id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Addresses — listar",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/patient/{{patientId}}/address",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient", "{{patientId}}", "address"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const list = pm.response.json().value;",
+              "pm.test('contiene la dirección creada', () => {",
+              "  const id = pm.collectionVariables.get('addressId');",
+              "  pm.expect(list.some(a => a.id === id)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Addresses — eliminar",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/patient/{{patientId}}/address/{{addressId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient", "{{patientId}}", "address", "{{addressId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200 o 204', () => pm.expect([200, 204]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients — eliminar (cleanup)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/patient/{{patientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "patient", "{{patientId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200 o 204', () => pm.expect([200, 204]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
