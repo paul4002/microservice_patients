@@ -3,6 +3,7 @@ package nur.edu.nurtricenter_patient;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -15,6 +16,7 @@ import an.awesome.pipelinr.Pipelinr;
 import an.awesome.pipelinr.Notification;
 
 @SpringBootApplication
+@ConfigurationPropertiesScan
 @EnableAsync
 @EnableScheduling
 public class NurtricenterPatientApplication {
