@@ -28,6 +28,19 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-nurtricenter_patient_db}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      CONSUL_ENABLED: ${CONSUL_ENABLED:-true}
+      CONSUL_HOST: ${CONSUL_HOST:-154.38.180.80}
+      CONSUL_PORT: ${CONSUL_PORT:-8500}
+      SERVICE_ID: ${SERVICE_ID:-nur-tricenter-patients}
+      SERVICE_NAME: ${SERVICE_NAME:-nur-tricenter-patients}
+      SERVICE_ADDRESS: ${SERVICE_ADDRESS:-154.38.180.80}
+      SERVICE_PORT: ${SERVICE_PORT:-8080}
+      HEALTH_CHECK_PATH: ${HEALTH_CHECK_PATH:-/actuator/health}
+      HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL:-15s}
+      HEALTH_CHECK_TIMEOUT: ${HEALTH_CHECK_TIMEOUT:-5s}
+      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"
 
