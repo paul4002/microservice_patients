@@ -10,10 +10,7 @@ import org.springframework.web.client.RestClient;
 public class DiscoveryConfig {
 
 	@Bean
-	public ConsulRegistrationService consulRegistrationService(
-		ConsulProperties properties,
-		RestClient.Builder restClientBuilder
-	) {
-		return new ConsulRegistrationService(properties, restClientBuilder);
+	public ConsulRegistrationService consulRegistrationService(ConsulProperties properties) {
+		return new ConsulRegistrationService(properties, RestClient.builder());
 	}
 }
