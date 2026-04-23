@@ -22,6 +22,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      consul:
+        condition: service_started
+      jaeger:
+        condition: service_started
     env_file:
       - .env
     environment:
@@ -44,5 +48,58 @@ services:
     ports:
       - "8080:8080"
 
+  consul:
+    image: hashicorp/consul:1.18
+    container_name: nurtricenter_patient_consul
+    command: agent -dev -client=0.0.0.0 -ui
+    ports:
+      - "${CONSUL_UI_PORT:-8500}:8500"
+      - "${CONSUL_DNS_PORT:-8600}:8600/udp"
+    volumes:
+      - consul_data:/consul/data
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: nurtricenter_patient_jaeger
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"
+      - "${JAEGER_ZIPKIN_PORT:-9411}:9411"
+      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"
+      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: nurtricenter_patient_prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+
+  grafana:
+    image: grafana/grafana-oss:11.1.4
+    container_name: nurtricenter_patient_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin123}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+      - jaeger
+
 volumes:
   pgdata:
+  consul_data:
+  prometheus_data:
+  grafana_data:

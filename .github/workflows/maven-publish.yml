@@ -20,6 +20,15 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build Maven
-      run: mvn compile
+      run: mvn -B compile
     - name: Test with Maven
-      run: mvn test
+      run: mvn -B test
+    - name: Coverage report (JaCoCo)
+      if: always()
+      run: mvn -B jacoco:report
+    - name: Upload coverage artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: jacoco-report
+        path: target/site/jacoco/
