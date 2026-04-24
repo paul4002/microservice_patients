@@ -160,25 +160,11 @@
 										<limit>
 											<counter>INSTRUCTION</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.80</minimum>
+											<minimum>0.90</minimum>
 										</limit>
 									</limits>
 								</rule>
 							</rules>
-							<excludes>
-								<exclude>**/NurtricenterPatientApplication.class</exclude>
-								<exclude>**/dto/**</exclude>
-								<exclude>**/config/**</exclude>
-								<exclude>**/domainModel/**</exclude>
-								<exclude>**/infraestructure/discovery/**</exclude>
-								<exclude>**/core/**</exclude>
-								<exclude>**/domain/**/events/**</exclude>
-								<exclude>**/infraestructure/security/**</exclude>
-								<exclude>**/infraestructure/repositories/**</exclude>
-								<exclude>**/webapi/**</exclude>
-								<exclude>**/application/auth/**</exclude>
-								<exclude>**/application/abstractions/**</exclude>
-							</excludes>
 						</configuration>
 					</execution>
 				</executions>

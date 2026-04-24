@@ -16,8 +16,6 @@ import nur.edu.nurtricenter_patient.application.patients.dto.PatientDto;
 import nur.edu.nurtricenter_patient.application.patients.listPatients.ListPatientsHandler;
 import nur.edu.nurtricenter_patient.application.patients.listPatients.ListPatientsQuery;
 import nur.edu.nurtricenter_patient.core.results.ResultWithValue;
-import nur.edu.nurtricenter_patient.domain.patient.SubscriptionStatus;
-
 class ListPatientsHandlerTest {
 
   private IPatientReadRepository readRepository;
@@ -32,7 +30,7 @@ class ListPatientsHandlerTest {
   @Test
   void shouldReturnAllPatients() {
     PatientDto dto = new PatientDto(UUID.randomUUID(), "Ana", "Perez", LocalDate.of(1990, 5, 20),
-        "ana@example.com", "75123456", "DOC-001", null, SubscriptionStatus.NONE, null, List.of());
+        "ana@example.com", "75123456", "DOC-001", null, null, null, List.of());
     when(readRepository.findAll()).thenReturn(List.of(dto));
 
     ResultWithValue<List<PatientDto>> result = handler.handle(new ListPatientsQuery());
