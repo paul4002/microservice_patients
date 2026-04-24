@@ -7,7 +7,7 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "keycloakUrl", "value": "http://154.38.180.80:8080" },
+    { "key": "keycloakUrl", "value": "http://207.180.197.169:8080" },
     { "key": "keycloakRealm", "value": "group3realm" },
     { "key": "keycloakClient", "value": "admin-cli" },
     { "key": "adminUser", "value": "admin" },
