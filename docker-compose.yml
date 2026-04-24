@@ -29,7 +29,7 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       CONSUL_ENABLED: ${CONSUL_ENABLED:-true}
-      CONSUL_HOST: ${CONSUL_HOST:-207.180.197.169}
+      CONSUL_HOST: ${CONSUL_HOST:-host.docker.internal}
       CONSUL_PORT: ${CONSUL_PORT:-8500}
       SERVICE_ID: ${SERVICE_ID:-nur-tricenter-patients}
       SERVICE_NAME: ${SERVICE_NAME:-nur-tricenter-patients}
