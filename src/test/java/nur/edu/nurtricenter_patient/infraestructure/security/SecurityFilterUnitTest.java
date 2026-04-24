@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -225,6 +226,127 @@ class SecurityFilterUnitTest {
     HttpServletResponse res = mock(HttpServletResponse.class);
     FilterChain chain = mock(FilterChain.class);
     properties.setBlockedUsers(List.of());
+
+    denyFilter.doFilterInternal(req, res, chain);
+
+    verify(chain).doFilter(req, res);
+  }
+
+  @Test
+  void denyFilter_shouldNotFilter_loginPath() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    when(req.getRequestURI()).thenReturn("/api/login");
+    assertTrue(denyFilter.shouldNotFilter(req));
+  }
+
+  @Test
+  void denyFilter_shouldNotFilter_refreshPath() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    when(req.getRequestURI()).thenReturn("/api/refresh");
+    assertTrue(denyFilter.shouldNotFilter(req));
+  }
+
+  @Test
+  void denyFilter_shouldNotFilter_actuatorPath() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    when(req.getRequestURI()).thenReturn("/actuator/health");
+    assertTrue(denyFilter.shouldNotFilter(req));
+  }
+
+  @Test
+  void denyFilter_unauthenticated_passes() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse res = mock(HttpServletResponse.class);
+    FilterChain chain = mock(FilterChain.class);
+    properties.setBlockedUsers(List.of("blocked-user"));
+    SecurityContextHolder.clearContext();
+
+    denyFilter.doFilterInternal(req, res, chain);
+
+    verify(chain).doFilter(req, res);
+  }
+
+  @Test
+  void denyFilter_blockedBySub_returns403() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse res = mock(HttpServletResponse.class);
+    FilterChain chain = mock(FilterChain.class);
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    properties.setBlockedUsers(List.of("blocked-sub"));
+
+    when(res.getOutputStream()).thenReturn(new jakarta.servlet.ServletOutputStream() {
+      @Override public boolean isReady() { return true; }
+      @Override public void setWriteListener(jakarta.servlet.WriteListener l) {}
+      @Override public void write(int b) { out.write(b); }
+    });
+
+    UsernamePasswordAuthenticationToken auth =
+        new UsernamePasswordAuthenticationToken(
+            "blocked-sub", null, List.of());
+    auth.setDetails(Map.of("sub", "blocked-sub", "preferred_username", "someuser"));
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    denyFilter.doFilterInternal(req, res, chain);
+
+    verify(res).setStatus(HttpServletResponse.SC_FORBIDDEN);
+    verify(chain, never()).doFilter(any(), any());
+  }
+
+  @Test
+  void denyFilter_blockedByUsername_returns403() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse res = mock(HttpServletResponse.class);
+    FilterChain chain = mock(FilterChain.class);
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    properties.setBlockedUsers(List.of("blocked-username"));
+
+    when(res.getOutputStream()).thenReturn(new jakarta.servlet.ServletOutputStream() {
+      @Override public boolean isReady() { return true; }
+      @Override public void setWriteListener(jakarta.servlet.WriteListener l) {}
+      @Override public void write(int b) { out.write(b); }
+    });
+
+    UsernamePasswordAuthenticationToken auth =
+        new UsernamePasswordAuthenticationToken(
+            "other-sub", null, List.of());
+    auth.setDetails(Map.of("sub", "other-sub", "preferred_username", "blocked-username"));
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    denyFilter.doFilterInternal(req, res, chain);
+
+    verify(res).setStatus(HttpServletResponse.SC_FORBIDDEN);
+  }
+
+  @Test
+  void denyFilter_notBlockedUser_passes() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse res = mock(HttpServletResponse.class);
+    FilterChain chain = mock(FilterChain.class);
+    properties.setBlockedUsers(List.of("blocked-user"));
+
+    UsernamePasswordAuthenticationToken auth =
+        new UsernamePasswordAuthenticationToken(
+            "normal-user", null, List.of());
+    auth.setDetails(Map.of("sub", "normal-sub", "preferred_username", "normal-user"));
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    denyFilter.doFilterInternal(req, res, chain);
+
+    verify(chain).doFilter(req, res);
+  }
+
+  @Test
+  void denyFilter_detailsNotMap_passes() throws Exception {
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse res = mock(HttpServletResponse.class);
+    FilterChain chain = mock(FilterChain.class);
+    properties.setBlockedUsers(List.of("blocked"));
+
+    UsernamePasswordAuthenticationToken auth =
+        new UsernamePasswordAuthenticationToken(
+            "user", null, List.of());
+    auth.setDetails("not-a-map");
+    SecurityContextHolder.getContext().setAuthentication(auth);
 
     denyFilter.doFilterInternal(req, res, chain);
 
