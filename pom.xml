@@ -170,6 +170,7 @@
 								<exclude>**/dto/**</exclude>
 								<exclude>**/config/**</exclude>
 								<exclude>**/domainModel/**</exclude>
+								<exclude>**/infraestructure/discovery/**</exclude>
 							</excludes>
 						</configuration>
 					</execution>
