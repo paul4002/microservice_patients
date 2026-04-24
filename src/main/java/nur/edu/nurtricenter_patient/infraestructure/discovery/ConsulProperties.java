@@ -6,12 +6,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ConsulProperties {
 
 	private boolean enabled = true;
-	private String host = "154.38.180.80";
+	private String host = "207.180.197.169";
 	private int port = 8500;
 	private String scheme = "http";
 	private String serviceId = "nur-tricenter-patients";
 	private String serviceName = "nur-tricenter-patients";
-	private String serviceAddress = "154.38.180.80";
+	private String serviceAddress = "207.180.197.169";
 	private int servicePort = 8080;
 	private String healthCheckPath = "/actuator/health";
 	private String healthCheckInterval = "15s";
