@@ -3,13 +3,13 @@ package nur.edu.nurtricenter_patient.webapi;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -17,11 +17,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -31,29 +32,31 @@ import nur.edu.nurtricenter_patient.application.auth.TokenResponse;
 import nur.edu.nurtricenter_patient.infraestructure.security.KeycloakJwtValidator;
 
 @SpringBootTest
-@AutoConfigureMockMvc
 class PatientControllerMvcTest {
 
   @Autowired
-  private MockMvc mockMvc;
+  private WebApplicationContext wac;
 
   @Autowired
   private ObjectMapper mapper;
 
-  @MockBean
+  @MockitoBean
   private KeycloakJwtValidator jwtValidator;
 
-  @MockBean
+  @MockitoBean
   private ITokenService tokenService;
+
+  private MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(wac)
+        .apply(springSecurity())
+        .build();
     Map<String, Object> claims = Map.of("sub", "test-user", "preferred_username", "admin");
     when(jwtValidator.validateAndExtract(anyString())).thenReturn(claims);
     when(jwtValidator.extractRoles(any())).thenReturn(List.of("admin", "nutritionist"));
   }
-
-  // --- Patient CRUD ---
 
   @Test
   void listPatients_authenticated_returns200() throws Exception {
@@ -73,9 +76,9 @@ class PatientControllerMvcTest {
     Map<String, Object> body = Map.of(
         "name", "Ana",
         "lastname", "Perez",
-        "birthDate", "1990-05-20",
+        "birthDate", "20-05-1990",
         "email", "ana." + UUID.randomUUID() + "@example.com",
-        "cellphone", "7" + (1000000 + (int)(Math.random() * 9000000)),
+        "cellphone", "7" + (1000000 + (int) (Math.random() * 9000000)),
         "document", "DOC-" + UUID.randomUUID()
     );
     mockMvc.perform(post("/api/patients")
@@ -88,23 +91,22 @@ class PatientControllerMvcTest {
   @Test
   void createPatient_duplicateEmail_returns409() throws Exception {
     String email = "dup." + UUID.randomUUID() + "@example.com";
-    String cellphone1 = "7" + (1000000 + (int)(Math.random() * 9000000));
-    String cellphone2 = "7" + (1000000 + (int)(Math.random() * 9000000));
-    Map<String, Object> body1 = Map.of("name", "Ana", "lastname", "P",
-        "birthDate", "1990-05-20", "email", email, "cellphone", cellphone1, "document", "D1-" + UUID.randomUUID());
-    Map<String, Object> body2 = Map.of("name", "Ana", "lastname", "P",
-        "birthDate", "1990-05-20", "email", email, "cellphone", cellphone2, "document", "D2-" + UUID.randomUUID());
+    String c1 = "7" + (1000000 + (int) (Math.random() * 9000000));
+    String c2 = "7" + (1000000 + (int) (Math.random() * 9000000));
+    Map<String, Object> b1 = Map.of("name", "A", "lastname", "P",
+        "birthDate", "01-01-1990", "email", email, "cellphone", c1, "document", "D1-" + UUID.randomUUID());
+    Map<String, Object> b2 = Map.of("name", "A", "lastname", "P",
+        "birthDate", "01-01-1990", "email", email, "cellphone", c2, "document", "D2-" + UUID.randomUUID());
 
     mockMvc.perform(post("/api/patients")
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(body1)))
+            .content(mapper.writeValueAsString(b1)))
         .andExpect(status().isCreated());
-
     mockMvc.perform(post("/api/patients")
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(body2)))
+            .content(mapper.writeValueAsString(b2)))
         .andExpect(status().isConflict());
   }
 
@@ -118,17 +120,17 @@ class PatientControllerMvcTest {
   @Test
   void getPatient_found_returns200() throws Exception {
     String email = "get." + UUID.randomUUID() + "@example.com";
-    String cellphone = "7" + (1000000 + (int)(Math.random() * 9000000));
+    String c = "7" + (1000000 + (int) (Math.random() * 9000000));
     Map<String, Object> body = Map.of("name", "Ana", "lastname", "P",
-        "birthDate", "1990-05-20", "email", email, "cellphone", cellphone, "document", "D-" + UUID.randomUUID());
+        "birthDate", "20-05-1990", "email", email, "cellphone", c, "document", "D-" + UUID.randomUUID());
 
-    String response = mockMvc.perform(post("/api/patients")
+    String resp = mockMvc.perform(post("/api/patients")
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(body)))
         .andReturn().getResponse().getContentAsString();
 
-    String id = mapper.readTree(response).path("value").asText();
+    String id = mapper.readTree(resp).path("value").asText();
     mockMvc.perform(get("/api/patients/" + id)
             .header("Authorization", "Bearer valid"))
         .andExpect(status().isOk());
@@ -137,43 +139,43 @@ class PatientControllerMvcTest {
   @Test
   void updatePatient_existing_returns200() throws Exception {
     String email = "upd." + UUID.randomUUID() + "@example.com";
-    String cellphone = "7" + (1000000 + (int)(Math.random() * 9000000));
+    String c = "7" + (1000000 + (int) (Math.random() * 9000000));
     Map<String, Object> body = Map.of("name", "Ana", "lastname", "P",
-        "birthDate", "1990-05-20", "email", email, "cellphone", cellphone, "document", "D-" + UUID.randomUUID());
+        "birthDate", "20-05-1990", "email", email, "cellphone", c, "document", "D-" + UUID.randomUUID());
 
-    String response = mockMvc.perform(post("/api/patients")
+    String resp = mockMvc.perform(post("/api/patients")
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(body)))
         .andReturn().getResponse().getContentAsString();
 
-    String id = mapper.readTree(response).path("value").asText();
-    String newEmail = "upd2." + UUID.randomUUID() + "@example.com";
-    String newCellphone = "7" + (1000000 + (int)(Math.random() * 9000000));
-    Map<String, Object> updateBody = Map.of("name", "Ana2", "lastname", "P2",
-        "birthDate", "1990-05-20", "email", newEmail, "cellphone", newCellphone, "document", "D2-" + UUID.randomUUID());
+    String id = mapper.readTree(resp).path("value").asText();
+    String e2 = "upd2." + UUID.randomUUID() + "@example.com";
+    String c2 = "7" + (1000000 + (int) (Math.random() * 9000000));
+    Map<String, Object> upd = Map.of("name", "Ana2", "lastname", "P2",
+        "birthDate", "20-05-1990", "email", e2, "cellphone", c2, "document", "D2-" + UUID.randomUUID());
 
     mockMvc.perform(put("/api/patients/" + id)
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(updateBody)))
+            .content(mapper.writeValueAsString(upd)))
         .andExpect(status().isOk());
   }
 
   @Test
   void deletePatient_existing_returns204() throws Exception {
     String email = "del." + UUID.randomUUID() + "@example.com";
-    String cellphone = "7" + (1000000 + (int)(Math.random() * 9000000));
+    String c = "7" + (1000000 + (int) (Math.random() * 9000000));
     Map<String, Object> body = Map.of("name", "Del", "lastname", "P",
-        "birthDate", "1990-05-20", "email", email, "cellphone", cellphone, "document", "D-" + UUID.randomUUID());
+        "birthDate", "20-05-1990", "email", email, "cellphone", c, "document", "D-" + UUID.randomUUID());
 
-    String response = mockMvc.perform(post("/api/patients")
+    String resp = mockMvc.perform(post("/api/patients")
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(body)))
         .andReturn().getResponse().getContentAsString();
 
-    String id = mapper.readTree(response).path("value").asText();
+    String id = mapper.readTree(resp).path("value").asText();
     mockMvc.perform(delete("/api/patients/" + id)
             .header("Authorization", "Bearer valid"))
         .andExpect(status().isNoContent());
@@ -187,15 +189,13 @@ class PatientControllerMvcTest {
   }
 
   @Test
-  void addAddress_notFoundPatient_returns404() throws Exception {
-    Map<String, Object> addressBody = Map.of(
-        "label", "Casa", "line1", "Calle 1", "country", "Bolivia",
-        "city", "La Paz", "latitude", -16.5, "longitude", -68.15);
-
+  void addAddress_patientNotFound_returns404() throws Exception {
+    Map<String, Object> addr = Map.of("label", "Casa", "line1", "Calle 1",
+        "country", "Bolivia", "city", "La Paz", "latitude", -16.5, "longitude", -68.15);
     mockMvc.perform(post("/api/patients/" + UUID.randomUUID() + "/addresses")
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(addressBody)))
+            .content(mapper.writeValueAsString(addr)))
         .andExpect(status().isNotFound());
   }
 
@@ -210,25 +210,20 @@ class PatientControllerMvcTest {
 
   @Test
   void createPatient_missingRequiredField_returns400() throws Exception {
-    Map<String, Object> body = Map.of("name", "Ana");
     mockMvc.perform(post("/api/patients")
             .header("Authorization", "Bearer valid")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(body)))
+            .content(mapper.writeValueAsString(Map.of("name", "Ana"))))
         .andExpect(status().isBadRequest());
   }
 
-  // --- Auth endpoints ---
-
   @Test
-  void login_delegatesToTokenService() throws Exception {
+  void login_delegatesToTokenService_returns200() throws Exception {
     when(tokenService.login("user", "pass"))
         .thenReturn(new TokenResponse(200, Map.of("access_token", "tok")));
-
-    Map<String, String> body = Map.of("username", "user", "password", "pass");
     mockMvc.perform(post("/api/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(body)))
+            .content(mapper.writeValueAsString(Map.of("username", "user", "password", "pass"))))
         .andExpect(status().isOk());
   }
 
@@ -236,23 +231,19 @@ class PatientControllerMvcTest {
   void login_keycloakUnavailable_returns503() throws Exception {
     when(tokenService.login(anyString(), anyString()))
         .thenThrow(new IdentityProviderUnavailableException("down"));
-
-    Map<String, String> body = Map.of("username", "user", "password", "pass");
     mockMvc.perform(post("/api/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(body)))
+            .content(mapper.writeValueAsString(Map.of("username", "u", "password", "p"))))
         .andExpect(status().isServiceUnavailable());
   }
 
   @Test
-  void refresh_delegatesToTokenService() throws Exception {
-    when(tokenService.refresh("refresh-tok"))
-        .thenReturn(new TokenResponse(200, Map.of("access_token", "new-tok")));
-
-    Map<String, String> body = Map.of("refreshToken", "refresh-tok");
+  void refresh_delegatesToTokenService_returns200() throws Exception {
+    when(tokenService.refresh("ref-tok"))
+        .thenReturn(new TokenResponse(200, Map.of("access_token", "new")));
     mockMvc.perform(post("/api/refresh")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(body)))
+            .content(mapper.writeValueAsString(Map.of("refresh_token", "ref-tok"))))
         .andExpect(status().isOk());
   }
 
@@ -260,11 +251,85 @@ class PatientControllerMvcTest {
   void refresh_keycloakUnavailable_returns503() throws Exception {
     when(tokenService.refresh(anyString()))
         .thenThrow(new IdentityProviderUnavailableException("down"));
-
-    Map<String, String> body = Map.of("refreshToken", "tok");
     mockMvc.perform(post("/api/refresh")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(mapper.writeValueAsString(body)))
+            .content(mapper.writeValueAsString(Map.of("refresh_token", "tok"))))
         .andExpect(status().isServiceUnavailable());
+  }
+
+  @Test
+  void updateAddress_existing_returns200() throws Exception {
+    String email = "ua." + UUID.randomUUID() + "@example.com";
+    String c = "7" + (1000000 + (int) (Math.random() * 9000000));
+    Map<String, Object> body = Map.of("name", "Ana", "lastname", "P",
+        "birthDate", "20-05-1990", "email", email, "cellphone", c, "document", "D-" + UUID.randomUUID());
+
+    String resp = mockMvc.perform(post("/api/patients")
+            .header("Authorization", "Bearer valid")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(body)))
+        .andReturn().getResponse().getContentAsString();
+    String patientId = mapper.readTree(resp).path("value").asText();
+
+    Map<String, Object> addr = Map.of("label", "Casa", "line1", "Calle 1",
+        "country", "Bolivia", "province", "La Paz", "city", "La Paz", "latitude", -16.5, "longitude", -68.15);
+    String addrResp = mockMvc.perform(post("/api/patients/" + patientId + "/addresses")
+            .header("Authorization", "Bearer valid")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(addr)))
+        .andReturn().getResponse().getContentAsString();
+    String addressId = mapper.readTree(addrResp).path("value").asText();
+
+    Map<String, Object> upd = Map.of("label", "Oficina", "line1", "Av. Principal",
+        "country", "Bolivia", "province", "Cochabamba", "city", "Cochabamba", "latitude", -17.4, "longitude", -66.15);
+    mockMvc.perform(put("/api/patients/" + patientId + "/addresses/" + addressId)
+            .header("Authorization", "Bearer valid")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(upd)))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void deactivateAddress_existing_returns204() throws Exception {
+    String email = "da." + UUID.randomUUID() + "@example.com";
+    String c = "7" + (1000000 + (int) (Math.random() * 9000000));
+    Map<String, Object> body = Map.of("name", "Ana", "lastname", "P",
+        "birthDate", "20-05-1990", "email", email, "cellphone", c, "document", "D-" + UUID.randomUUID());
+
+    String resp = mockMvc.perform(post("/api/patients")
+            .header("Authorization", "Bearer valid")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(body)))
+        .andReturn().getResponse().getContentAsString();
+    String patientId = mapper.readTree(resp).path("value").asText();
+
+    Map<String, Object> addr = Map.of("label", "Casa", "line1", "Calle 1",
+        "country", "Bolivia", "province", "La Paz", "city", "La Paz", "latitude", -16.5, "longitude", -68.15);
+    String addrResp = mockMvc.perform(post("/api/patients/" + patientId + "/addresses")
+            .header("Authorization", "Bearer valid")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(addr)))
+        .andReturn().getResponse().getContentAsString();
+    String addressId = mapper.readTree(addrResp).path("value").asText();
+
+    mockMvc.perform(delete("/api/patients/" + patientId + "/addresses/" + addressId)
+            .header("Authorization", "Bearer valid"))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
+  void listPatients_wrongRole_returns403() throws Exception {
+    when(jwtValidator.extractRoles(any())).thenReturn(List.of("patient"));
+    mockMvc.perform(get("/api/patients")
+            .header("Authorization", "Bearer valid"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void deletePatient_wrongRole_returns403() throws Exception {
+    when(jwtValidator.extractRoles(any())).thenReturn(List.of("nutritionist"));
+    mockMvc.perform(delete("/api/patients/" + UUID.randomUUID())
+            .header("Authorization", "Bearer valid"))
+        .andExpect(status().isForbidden());
   }
 }

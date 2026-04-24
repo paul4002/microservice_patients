@@ -115,6 +115,171 @@ class ProcessSubscriptionEventIntegrationTest {
     assertEquals(0L, countOutboxByEventName("paciente.suscripcion-actualizada"));
   }
 
+  @Test
+  void handle_nullEventName_returnsFailure() {
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      null, Map.of(), null, UUID.randomUUID(), UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+    Result result = handler.handle(command);
+    assertTrue(result.isFailure());
+  }
+
+  @Test
+  void handle_nullEventId_returnsFailure() {
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "contrato.creado", Map.of(), "contrato.creado", null, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+    Result result = handler.handle(command);
+    assertTrue(result.isFailure());
+  }
+
+  @Test
+  void handle_unknownEventName_returnsSuccess() {
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "unknown.event", Map.of(), "unknown.event",
+      UUID.randomUUID(), UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{\"event\":\"unknown\"}"
+    );
+    Result result = handler.handle(command);
+    assertTrue(result.isSuccess());
+  }
+
+  @Test
+  void contratoCancelado_withPatient_removesSubscription() {
+    UUID subscriptionId = UUID.randomUUID();
+    Patient patient = createPatient(subscriptionId);
+    patientRepository.add(patient);
+
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "contrato.cancelado",
+      Map.of("contratoId", subscriptionId.toString(), "motivoCancelacion", "test"),
+      "contrato.cancelado", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{\"event\":\"contrato.cancelado\"}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isSuccess());
+  }
+
+  @Test
+  void suscripcionEliminada_withPatient_removesSubscription() {
+    UUID subscriptionId = UUID.randomUUID();
+    Patient patient = createPatient(subscriptionId);
+    patientRepository.add(patient);
+
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "suscripciones.suscripcion-eliminada",
+      Map.of("suscripcionId", subscriptionId.toString()),
+      "suscripciones.suscripcion-eliminada", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isSuccess());
+  }
+
+  @Test
+  void suscripcionActualizada_withPatient_updatesSubscription() {
+    UUID subscriptionId = UUID.randomUUID();
+    Patient patient = createPatient(subscriptionId);
+    patientRepository.add(patient);
+
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "suscripciones.suscripcion-actualizada",
+      Map.of("suscripcionId", subscriptionId.toString(), "fechaFin", "2027-01-01", "estado", "ACTIVE"),
+      "suscripciones.suscripcion-actualizada", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isSuccess());
+  }
+
+  @Test
+  void applyContractCreated_missingContractId_returnsFailure() {
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "contrato.creado",
+      Map.of("pacienteId", UUID.randomUUID().toString()),
+      "contrato.creado", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isFailure());
+  }
+
+  @Test
+  void applyContractCreated_missingPatientId_returnsFailure() {
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "contrato.creado",
+      Map.of("contratoId", UUID.randomUUID().toString()),
+      "contrato.creado", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isFailure());
+  }
+
+  @Test
+  void applyContractCreated_expiredEndDate_setsExpiredStatus() {
+    Patient patient = createPatient(null);
+    patientRepository.add(patient);
+
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "contrato.creado",
+      Map.of(
+        "contratoId", UUID.randomUUID().toString(),
+        "pacienteId", patient.getId().toString(),
+        "fechaFin", "2020-01-01"
+      ),
+      "contrato.creado", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isSuccess());
+  }
+
+  @Test
+  void applySubscriptionUpdate_missingSubscriptionId_returnsFailure() {
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "suscripciones.suscripcion-actualizada",
+      Map.of("someOtherKey", "value"),
+      "suscripciones.suscripcion-actualizada", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isFailure());
+  }
+
+  @Test
+  void contratoCancelar_eventName_removesSubscription() {
+    UUID subscriptionId = UUID.randomUUID();
+    Patient patient = createPatient(subscriptionId);
+    patientRepository.add(patient);
+
+    UUID eventId = UUID.randomUUID();
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "contrato.cancelar",
+      Map.of("contratoId", subscriptionId.toString()),
+      "contrato.cancelar", eventId, UUID.randomUUID(), 1, "2026-02-23T00:00:00Z", "{}"
+    );
+
+    Result result = handler.handle(command);
+    assertTrue(result.isSuccess());
+  }
+
+  @Test
+  void handle_nullOccurredOn_usesCurrentTime() {
+    ProcessSubscriptionEventCommand command = new ProcessSubscriptionEventCommand(
+      "unknown.event", Map.of(), "unknown.event",
+      UUID.randomUUID(), UUID.randomUUID(), 1, null, "{}"
+    );
+    Result result = handler.handle(command);
+    assertTrue(result.isSuccess());
+  }
+
   private long countInboundByEventId(UUID eventId) {
     long count = 0;
     for (InboundEventEntity row : inboundEventRepository.findAll()) {

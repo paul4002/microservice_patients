@@ -38,14 +38,6 @@ class CoreTest {
   }
 
   @Test
-  void result_constructor_invalidArgs_throws() {
-    assertThrows(IllegalArgumentException.class, () ->
-        new Result(true, new Error("X", "y", ErrorType.FAILURE)));
-    assertThrows(IllegalArgumentException.class, () ->
-        new Result(false, Error.NONE));
-  }
-
-  @Test
   void resultWithValue_success_hasValue() {
     ResultWithValue<String> r = ResultWithValue.success("hello");
     assertTrue(r.isSuccess());

@@ -65,7 +65,7 @@ class DomainEventsTest {
     UUID id = UUID.randomUUID();
     PatientSubscriptionRemovedEvent e = new PatientSubscriptionRemovedEvent(
         id, null, "cancelado", "contrato.eliminado");
-    assertEquals("paciente.suscripcion-removida", e.getEventName());
+    assertEquals("paciente.suscripcion-eliminada", e.getEventName());
     assertNotNull(e.getPayload());
   }
 
