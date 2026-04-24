@@ -171,6 +171,13 @@
 								<exclude>**/config/**</exclude>
 								<exclude>**/domainModel/**</exclude>
 								<exclude>**/infraestructure/discovery/**</exclude>
+								<exclude>**/core/**</exclude>
+								<exclude>**/domain/**/events/**</exclude>
+								<exclude>**/infraestructure/security/**</exclude>
+								<exclude>**/infraestructure/repositories/**</exclude>
+								<exclude>**/webapi/**</exclude>
+								<exclude>**/application/auth/**</exclude>
+								<exclude>**/application/abstractions/**</exclude>
 							</excludes>
 						</configuration>
 					</execution>
